@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mongodb:
     image: mongo:latest
@@ -46,9 +44,6 @@ services:
       REACT_APP_API_URL: http://localhost:5000/api
     depends_on:
       - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     networks:
       - ile-network
 

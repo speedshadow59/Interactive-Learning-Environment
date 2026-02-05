@@ -45,14 +45,15 @@ router.post('/', authMiddleware, async (req, res) => {
       return res.status(403).json({ message: 'Only teachers can create courses' });
     }
 
-    const { title, description, targetGrades, difficulty, topics } = req.body;
+    const { title, description, targetGrades, difficulty, topics, isPublished } = req.body;
     const course = new Course({
       title,
       description,
       targetGrades,
       difficulty,
       topics,
-      instructor: req.user.userId
+      instructor: req.user.userId,
+      isPublished: Boolean(isPublished)
     });
 
     await course.save();

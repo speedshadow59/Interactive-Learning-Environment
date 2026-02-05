@@ -17,12 +17,29 @@ const RegisterPage = () => {
   const { register } = useAuthStore();
   const navigate = useNavigate();
 
+  const yearGroups = Array.from({ length: 13 }, (_, index) => index + 1);
+  const formatYearLabel = (year) => {
+    if (year <= 6) return `Year ${year} (Primary)`;
+    if (year <= 11) return `Year ${year} (Secondary)`;
+    return `Year ${year} (Sixth Form)`;
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => {
+      if (name === 'role' && value !== 'student') {
+        return {
+          ...prev,
+          role: value,
+          grade: ''
+        };
+      }
+
+      return {
+        ...prev,
+        [name]: value
+      };
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -34,7 +51,16 @@ const RegisterPage = () => {
       return;
     }
 
-    const result = await register(formData);
+    const payload = { ...formData };
+    if (payload.role !== 'student') {
+      delete payload.grade;
+    } else if (payload.grade === '') {
+      delete payload.grade;
+    } else {
+      payload.grade = Number(payload.grade);
+    }
+
+    const result = await register(payload);
     if (result.success) {
       navigate('/');
     } else {
@@ -128,16 +154,20 @@ const RegisterPage = () => {
 
             {formData.role === 'student' && (
               <div className="form-group">
-                <label htmlFor="grade">Grade</label>
-                <input
-                  type="number"
+                <label htmlFor="grade">Year Group (Primary/Secondary)</label>
+                <select
                   id="grade"
                   name="grade"
-                  min="1"
-                  max="13"
                   value={formData.grade}
                   onChange={handleChange}
-                />
+                >
+                  <option value="">Select year group</option>
+                  {yearGroups.map((year) => (
+                    <option key={year} value={year}>
+                      {formatYearLabel(year)}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
           </div>

@@ -10,7 +10,11 @@ const registerSchema = Joi.object({
   firstName: Joi.string().required(),
   lastName: Joi.string().required(),
   role: Joi.string().valid('student', 'teacher').default('student'),
-  grade: Joi.number().min(1).max(13)
+  grade: Joi.when('role', {
+    is: 'student',
+    then: Joi.number().min(1).max(13).optional(),
+    otherwise: Joi.forbidden()
+  })
 });
 
 const loginSchema = Joi.object({

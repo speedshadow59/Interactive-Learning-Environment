@@ -22,7 +22,11 @@ router.get('/teacher', authMiddleware, async (req, res) => {
       courses: courses.map(course => ({
         id: course._id,
         title: course.title,
-        enrolledCount: course.enrolledStudents.length
+        enrolledCount: course.enrolledStudents.length,
+        targetGrades: course.targetGrades,
+        difficulty: course.difficulty,
+        isPublished: course.isPublished,
+        createdAt: course.createdAt
       }))
     };
 
@@ -48,6 +52,14 @@ router.get('/student', authMiddleware, async (req, res) => {
       student: req.user.userId
     });
 
+    const progressCourseIds = [...new Set(progressData.map(p => p.course.toString()))];
+    const progressCourses = progressCourseIds.length
+      ? await Course.find({ _id: { $in: progressCourseIds } }, 'title')
+      : [];
+    const progressCourseMap = new Map(
+      progressCourses.map(course => [course._id.toString(), course.title])
+    );
+
     const dashboardData = {
       user: user.toJSON(),
       enrolledCourses: enrolledCourses.map(c => ({
@@ -57,6 +69,7 @@ router.get('/student', authMiddleware, async (req, res) => {
       totalPoints: progressData.reduce((sum, p) => sum + p.totalPoints, 0),
       progressByCourse: progressData.map(p => ({
         courseId: p.course,
+        courseTitle: progressCourseMap.get(p.course.toString()) || 'Course',
         completedChallenges: p.completedChallenges.length,
         totalPoints: p.totalPoints
       }))
