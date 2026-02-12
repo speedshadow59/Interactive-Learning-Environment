@@ -53,6 +53,20 @@ router.put('/student/:studentId/course/:courseId', authMiddleware, async (req, r
     }
 
     await progress.save();
+    
+    // Check for new badges
+    try {
+      const axios = require('axios');
+      await axios.post(
+        `http://localhost:${process.env.BACKEND_PORT || 5000}/api/badges/check/${req.params.studentId}/${req.params.courseId}`,
+        {},
+        { headers: { Authorization: req.headers.authorization } }
+      );
+    } catch (badgeErr) {
+      // Non-critical, continue even if badge check fails
+      console.log('Badge check failed:', badgeErr.message);
+    }
+    
     res.json({ message: 'Progress updated', progress });
   } catch (error) {
     res.status(500).json({ message: error.message });

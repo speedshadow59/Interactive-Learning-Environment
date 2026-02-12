@@ -1,0 +1,163 @@
+/* Analytics Styles */
+.analytics-container {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
+  height: 600px;
+}
+
+.students-list {
+  background: white;
+  border: 1px solid #e3e8ee;
+  border-radius: 10px;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.students-list h3 {
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  color: #1f2a37;
+}
+
+.student-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.student-item {
+  padding: 15px;
+  border: 1px solid #e3e8ee;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.student-item:hover {
+  background: #f5f7f9;
+  border-color: #1f7a8c;
+}
+
+.student-item.active {
+  background: #1f7a8c;
+  color: white;
+  border-color: #1f7a8c;
+}
+
+.student-info h4 {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+}
+
+.student-info p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.student-points {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.student-details {
+  background: white;
+  border: 1px solid #e3e8ee;
+  border-radius: 10px;
+  padding: 30px;
+  overflow-y: auto;
+}
+
+.student-details h3 {
+  margin: 0 0 20px 0;
+  font-size: 24px;
+  color: #1f2a37;
+}
+
+.student-details h4 {
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  color: #1f2a37;
+}
+
+.analytics-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.stat-box {
+  background: #f5f7f9;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #607080;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f7a8c;
+}
+
+.analytics-section {
+  margin-bottom: 30px;
+}
+
+.badges-mini-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.badge-mini {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.challenges-progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.progress-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f5f7f9;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.progress-item .date {
+  color: #607080;
+  font-size: 12px;
+}
+
+@media (max-width: 1024px) {
+  .analytics-container {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .students-list {
+    max-height: 300px;
+  }
+}

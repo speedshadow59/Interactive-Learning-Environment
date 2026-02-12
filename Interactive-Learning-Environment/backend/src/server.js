@@ -25,6 +25,7 @@ app.use('/api/challenges', require('./routes/challengeRoutes'));
 app.use('/api/submissions', require('./routes/submissionRoutes'));
 app.use('/api/progress', require('./routes/progressRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/badges', require('./routes/badgeRoutes'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

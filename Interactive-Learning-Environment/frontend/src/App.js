@@ -8,7 +8,9 @@ import RegisterPage from './pages/RegisterPage';
 import StudentDashboard from './pages/StudentDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import CoursePage from './pages/CoursePage';
+import CoursesPage from './pages/CoursesPage';
 import ChallengePage from './pages/ChallengePage';
+import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 
 // Components
@@ -52,7 +54,15 @@ function App() {
             }
           />
           <Route
-            path="/courses/:courseId"
+            path="/courses"
+            element={
+              <PrivateRoute>
+                <CoursesPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/courses/:id"
             element={
               <PrivateRoute>
                 <CoursePage />
@@ -60,10 +70,18 @@ function App() {
             }
           />
           <Route
-            path="/challenges/:challengeId"
+            path="/challenges/:id"
             element={
               <PrivateRoute>
                 <ChallengePage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <ProfilePage />
               </PrivateRoute>
             }
           />

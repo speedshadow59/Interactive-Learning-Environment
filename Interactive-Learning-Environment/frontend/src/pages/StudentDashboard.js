@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '../services/apiClient';
+import BadgesDisplay from '../components/BadgesDisplay';
 import '../styles/Dashboard.css';
 
 const StudentDashboard = () => {
@@ -120,11 +121,11 @@ const StudentDashboard = () => {
         {dashboardData?.enrolledCourses?.length > 0 ? (
           <div className="courses-grid">
             {dashboardData.enrolledCourses.map(course => (
-              <div key={course.id} className="course-card">
+              <div key={course.id} className="course-card course-card--primary">
                 <div>
                   <h3>{course.title}</h3>
                 </div>
-                <a href={`/courses/${course.id}`} className="btn btn-secondary">
+                <a href={`/courses/${course.id}`} className="btn">
                   Continue
                 </a>
               </div>
@@ -190,6 +191,10 @@ const StudentDashboard = () => {
         ) : (
           <p className="empty-state">No available courses right now.</p>
         )}
+      </div>
+
+      <div className="section-card">
+        <BadgesDisplay studentId={dashboardData?.user?._id} />
       </div>
     </div>
   );

@@ -71,6 +71,10 @@ export const useAuthStore = create((set) => ({
     set({ user: null, token: null, error: null });
   },
 
+  updateUser: (userData) => {
+    set({ user: userData });
+  },
+
   updateProfile: async (updates) => {
     try {
       const response = await apiClient.put('/users/profile', updates);
