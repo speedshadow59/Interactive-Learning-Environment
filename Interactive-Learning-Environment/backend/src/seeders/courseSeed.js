@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const bcrypt = require('bcryptjs');
 const Course = require('../models/Course');
 const Challenge = require('../models/Challenge');
 const User = require('../models/User');
@@ -1611,9 +1612,10 @@ async function seedDatabase() {
     // Find or create a teacher user for instructor reference
     let teacher = await User.findOne({ role: 'teacher' });
     if (!teacher) {
-      const bcrypt = require('bcryptjs');
+      // Use environment variable for password, fallback to default for demo
+      const teacherPassword = process.env.DEMO_TEACHER_PASSWORD || 'teacher123';
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash('teacher123', salt);
+      const hashedPassword = await bcrypt.hash(teacherPassword, salt);
       
       teacher = new User({
         username: 'demoteacher',
@@ -1625,6 +1627,12 @@ async function seedDatabase() {
       });
       await teacher.save();
       console.log('✓ Created demo teacher user');
+      
+      // Only log password in development mode
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`  📧 Email: teacher@example.com`);
+        console.log(`  🔑 Password: ${teacherPassword}`);
+      }
     }
 
     // Clear existing courses and challenges
@@ -1673,9 +1681,13 @@ async function seedDatabase() {
     console.log(`\n📊 Summary:`);
     console.log(`   - ${createdCourses.length} courses created`);
     console.log(`   - ${challengesData.reduce((sum, set) => sum + set.challenges.length, 0)} challenges created`);
-    console.log(`\n👤 Demo Teacher Account:`);
-    console.log(`   Email: teacher@example.com`);
-    console.log(`   Password: teacher123`);
+    
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`\n👤 Demo Teacher Account:`);
+      console.log(`   Email: teacher@example.com`);
+      console.log(`   Password: ${process.env.DEMO_TEACHER_PASSWORD || 'teacher123'}`);
+      console.log(`\n⚠️  Note: Change the demo password in production by setting DEMO_TEACHER_PASSWORD env var`);
+    }
 
     process.exit(0);
   } catch (error) {
