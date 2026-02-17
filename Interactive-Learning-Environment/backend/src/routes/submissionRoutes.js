@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware');
+const { authenticate } = require('../middleware/authMiddleware');
 const Submission = require('../models/Submission');
 
 // Submit code
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   try {
     const { challenge, course, code, language } = req.body;
 
@@ -27,7 +27,7 @@ router.post('/', authMiddleware, async (req, res) => {
 });
 
 // Get student submissions
-router.get('/student/:studentId', authMiddleware, async (req, res) => {
+router.get('/student/:studentId', authenticate, async (req, res) => {
   try {
     const submissions = await Submission.find({ student: req.params.studentId })
       .populate('challenge')
@@ -39,7 +39,7 @@ router.get('/student/:studentId', authMiddleware, async (req, res) => {
 });
 
 // Get submission by ID
-router.get('/:id', authMiddleware, async (req, res) => {
+router.get('/:id', authenticate, async (req, res) => {
   try {
     const submission = await Submission.findById(req.params.id)
       .populate('student')

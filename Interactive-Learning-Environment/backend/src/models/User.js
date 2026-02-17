@@ -68,6 +68,58 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true
     },
+    // GDPR Compliance Fields
+    privacyConsent: {
+      marketingEmails: {
+        type: Boolean,
+        default: false
+      },
+      analyticsTracking: {
+        type: Boolean,
+        default: false
+      },
+      thirdPartySharing: {
+        type: Boolean,
+        default: false
+      },
+      updatedAt: {
+        type: Date,
+        default: Date.now
+      }
+    },
+    lastLogin: {
+      type: Date,
+      default: null
+    },
+    deletionScheduled: {
+      requestedAt: Date,
+      deleteAt: Date,
+      gracePeriodDays: Number
+    },
+    // Course Relationships
+    enrolledCourses: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Course'
+      }
+    ],
+    teachingCourses: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Course'
+      }
+    ],
+    // Gamification
+    points: {
+      type: Number,
+      default: 0
+    },
+    badges: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Badge'
+      }
+    ],
     createdAt: {
       type: Date,
       default: Date.now

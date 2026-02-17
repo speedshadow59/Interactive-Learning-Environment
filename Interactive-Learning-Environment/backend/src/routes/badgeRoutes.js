@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware');
+const { authenticate } = require('../middleware/authMiddleware');
 const Badge = require('../models/Badge');
 const Progress = require('../models/Progress');
 
@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
 });
 
 // Get student's earned badges
-router.get('/student/:studentId', authMiddleware, async (req, res) => {
+router.get('/student/:studentId', authenticate, async (req, res) => {
   try {
     const progress = await Progress.find({ student: req.params.studentId });
     
@@ -31,7 +31,7 @@ router.get('/student/:studentId', authMiddleware, async (req, res) => {
 });
 
 // Award badge to student
-router.post('/award', authMiddleware, async (req, res) => {
+router.post('/award', authenticate, async (req, res) => {
   try {
     if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Only teachers can award badges' });
@@ -68,7 +68,7 @@ router.post('/award', authMiddleware, async (req, res) => {
 });
 
 // Check and auto-award badges based on achievements
-router.post('/check/:studentId/:courseId', authMiddleware, async (req, res) => {
+router.post('/check/:studentId/:courseId', authenticate, async (req, res) => {
   try {
     const { studentId, courseId } = req.params;
 

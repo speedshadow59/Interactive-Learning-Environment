@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../services/apiClient';
 import { useAuthStore } from '../stores/authStore';
+import BlockEditor from '../components/BlockEditor';
 import '../styles/Challenge.css';
 
 const ChallengePage = () => {
@@ -10,12 +11,57 @@ const ChallengePage = () => {
   const { user } = useAuthStore();
   const [challenge, setChallenge] = useState(null);
   const [code, setCode] = useState('');
+  const [blocks, setBlocks] = useState([]);
   const [language, setLanguage] = useState('javascript');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [showHints, setShowHints] = useState(false);
+  const [useBlockMode, setUseBlockMode] = useState(true);
+
+  const buildCodeFromBlocks = () => {
+    if (blocks.length === 0) return code;
+
+    return blocks
+      .map((block) => {
+        let blockCode = block.code;
+        Object.entries(block.params).forEach(([param, value]) => {
+          let resolved = value || `<${param}>`;
+          if (block.type === 'log' && param === 'text') {
+            const trimmed = (value || '').trim();
+            if (!trimmed) {
+              resolved = '""';
+            } else if (
+              (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+              (trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+              !Number.isNaN(Number(trimmed))
+            ) {
+              resolved = trimmed;
+            } else {
+              resolved = JSON.stringify(trimmed);
+            }
+          }
+          blockCode = blockCode.replace(new RegExp(`%${param}%`, 'g'), resolved);
+        });
+        return blockCode;
+      })
+      .join('\n');
+  };
+
+  const buildSubmissionCode = () => {
+    if (!useBlockMode || blocks.length === 0) return code;
+    return buildCodeFromBlocks();
+  };
+
+  const switchToCodeMode = () => {
+    setCode(buildCodeFromBlocks());
+    setUseBlockMode(false);
+  };
+
+  const switchToBlockMode = () => {
+    setUseBlockMode(true);
+  };
 
   useEffect(() => {
     const fetchChallenge = async () => {
@@ -23,6 +69,13 @@ const ChallengePage = () => {
         const response = await apiClient.get(`/challenges/${id}`);
         setChallenge(response.data);
         setCode(response.data.initialCode || '// Write your code here\n');
+        
+        // Initialize blocks if this is a block-based challenge
+        if (response.data.isBlockBased) {
+          setUseBlockMode(true);
+          // Parse blocklyXml or create empty starter blocks
+          setBlocks([]);
+        }
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load challenge');
       } finally {
@@ -39,10 +92,13 @@ const ChallengePage = () => {
     setError('');
 
     try {
+      // Convert blocks to code if in block mode
+      const submissionCode = buildSubmissionCode();
+
       const response = await apiClient.post('/submissions', {
         challenge: id,
         course: challenge.course,
-        code,
+        code: submissionCode,
         language
       });
 
@@ -74,12 +130,43 @@ const ChallengePage = () => {
     }
   };
 
-  const handleRunCode = () => {
-    setResult({
-      success: true,
-      message: 'Code execution simulation (actual execution would require a sandboxed environment)',
-      output: 'This is a simulated output. In production, code would run in a secure sandbox.'
-    });
+  const handleRunCode = async () => {
+    setSubmitting(true);
+    setError('');
+
+    try {
+      const codeToRun = buildSubmissionCode();
+
+      const response = await apiClient.post('/execute', {
+        code: codeToRun,
+        language,
+      });
+
+      const rawOutput = (response.data?.output || '').trim();
+      const expected = (challenge?.testCases || []).map((tc) => `${tc.expectedOutput || ''}`.trim()).filter(Boolean);
+      const matched = expected.length > 0
+        ? expected.some((exp) => rawOutput.includes(exp))
+        : true;
+
+      setResult({
+        success: matched,
+        message: matched
+          ? 'Code executed successfully'
+          : 'Code executed, but output does not match expected test output yet',
+        output: response.data?.output || '(no output)',
+        expectedOutput: expected[0] || null,
+      });
+    } catch (err) {
+      const executionError = err.response?.data?.error || err.response?.data?.message || 'Code execution failed';
+      setResult({
+        success: false,
+        message: 'Execution failed',
+        output: executionError,
+      });
+      setError(executionError);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) return <div className="loading">Loading challenge...</div>;
@@ -173,7 +260,23 @@ const ChallengePage = () => {
 
       <div className="challenge-editor">
         <div className="editor-header">
-          <h3>Code Editor</h3>
+          <div>
+            <h3>Code Editor</h3>
+            <div className="editor-mode-toggle">
+              <button
+                className={`toggle-btn ${useBlockMode ? 'active' : ''}`}
+                onClick={switchToBlockMode}
+              >
+                🧩 Block Mode
+              </button>
+              <button
+                className={`toggle-btn ${!useBlockMode ? 'active' : ''}`}
+                onClick={switchToCodeMode}
+              >
+                {'<>'} Code Mode
+              </button>
+            </div>
+          </div>
           <select
             className="language-selector"
             value={language}
@@ -184,15 +287,23 @@ const ChallengePage = () => {
           </select>
         </div>
 
-        <div className="code-editor-wrapper">
-          <textarea
-            className="code-editor"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="Write your code here..."
-            spellCheck={false}
+        {useBlockMode ? (
+          <BlockEditor
+            initialBlocks={blocks}
+            onChange={setBlocks}
+            language={language}
           />
-        </div>
+        ) : (
+          <div className="code-editor-wrapper">
+            <textarea
+              className="code-editor"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="Write your code here..."
+              spellCheck={false}
+            />
+          </div>
+        )}
 
         <div className="editor-actions">
           <button
@@ -215,6 +326,11 @@ const ChallengePage = () => {
           <div className={`submission-result ${result.success ? 'success' : 'error'}`}>
             <h4>{result.message}</h4>
             {result.output && <pre>{result.output}</pre>}
+            {result.expectedOutput && !result.success && (
+              <p>
+                Expected (example): <strong>{result.expectedOutput}</strong>
+              </p>
+            )}
             {result.submission && (
               <p>
                 Status: <strong>{result.submission.result || 'Pending'}</strong>

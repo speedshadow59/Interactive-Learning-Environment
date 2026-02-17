@@ -25,12 +25,7 @@ const StudentDashboard = () => {
         const data = response.data;
         setDashboardData(data);
 
-        const params = {};
-        if (data?.user?.grade) {
-          params.targetGrade = data.user.grade;
-        }
-
-        const coursesResponse = await apiClient.get('/courses', { params });
+        const coursesResponse = await apiClient.get('/courses');
         setAvailableCourses(coursesResponse.data || []);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load dashboard');
@@ -76,6 +71,12 @@ const StudentDashboard = () => {
   );
   const filteredAvailableCourses = availableCourses.filter(
     course => !enrolledCourseIds.has(course._id.toString())
+  );
+  const studentGrade = dashboardData?.user?.grade;
+  const recommendedCourses = filteredAvailableCourses.filter((course) =>
+    studentGrade && Array.isArray(course.targetGrades)
+      ? course.targetGrades.includes(studentGrade)
+      : false
   );
 
   return (
@@ -156,7 +157,7 @@ const StudentDashboard = () => {
 
       <div className="section-card">
         <div className="section-header">
-          <h2>Available Courses</h2>
+          <h2>Recommended Courses</h2>
           {dashboardData?.user?.grade && (
             <span className="section-subtitle">
               Recommended for {formatYearLabel(dashboardData.user.grade)}
@@ -164,6 +165,39 @@ const StudentDashboard = () => {
           )}
         </div>
         {enrollError && <div className="error">{enrollError}</div>}
+        {recommendedCourses.length > 0 ? (
+          <div className="courses-grid">
+            {recommendedCourses.map(course => (
+              <div key={course._id} className="course-card course-card--light">
+                <div>
+                  <h3>{course.title}</h3>
+                  <p>{course.description}</p>
+                  <div className="course-meta">
+                    <span className="badge">{course.difficulty}</span>
+                    <span className="badge">
+                      {formatYearList(course.targetGrades)}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => handleEnroll(course._id)}
+                  disabled={enrollingId === course._id}
+                >
+                  {enrollingId === course._id ? 'Enrolling...' : 'Enroll'}
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="empty-state">No recommended courses yet for your year group.</p>
+        )}
+      </div>
+
+      <div className="section-card">
+        <div className="section-header">
+          <h2>All Available Courses</h2>
+        </div>
         {filteredAvailableCourses.length > 0 ? (
           <div className="courses-grid">
             {filteredAvailableCourses.map(course => (

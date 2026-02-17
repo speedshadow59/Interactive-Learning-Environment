@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware');
+const { authenticate } = require('../middleware/authMiddleware');
 const Progress = require('../models/Progress');
 
 // Get student progress for a course
-router.get('/student/:studentId/course/:courseId', authMiddleware, async (req, res) => {
+router.get('/student/:studentId/course/:courseId', authenticate, async (req, res) => {
   try {
     const progress = await Progress.findOne({
       student: req.params.studentId,
@@ -22,7 +22,7 @@ router.get('/student/:studentId/course/:courseId', authMiddleware, async (req, r
 });
 
 // Update student progress
-router.put('/student/:studentId/course/:courseId', authMiddleware, async (req, res) => {
+router.put('/student/:studentId/course/:courseId', authenticate, async (req, res) => {
   try {
     const { challengeId, pointsEarned } = req.body;
 

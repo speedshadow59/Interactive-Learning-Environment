@@ -27,14 +27,20 @@ const register = async (req, res) => {
   try {
     const { error, value } = registerSchema.validate(req.body);
     if (error) {
-      return res.status(400).json({ message: error.details[0].message });
+      return res.status(400).json({
+        success: false,
+        message: error.details[0].message
+      });
     }
 
     const { username, email, password, firstName, lastName, role, grade } = value;
 
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
-      return res.status(409).json({ message: 'User already exists' });
+      return res.status(409).json({
+        success: false,
+        message: 'User already exists'
+      });
     }
 
     const newUser = new User({
@@ -44,7 +50,12 @@ const register = async (req, res) => {
       firstName,
       lastName,
       role,
-      grade
+      grade,
+      privacyConsent: {
+        marketingEmails: false,
+        analyticsTracking: false,
+        thirdPartySharing: false
+      }
     });
 
     await newUser.save();
@@ -56,12 +67,16 @@ const register = async (req, res) => {
     );
 
     res.status(201).json({
+      success: true,
       message: 'User registered successfully',
       user: newUser.toJSON(),
       token
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
@@ -70,20 +85,47 @@ const login = async (req, res) => {
   try {
     const { error, value } = loginSchema.validate(req.body);
     if (error) {
-      return res.status(400).json({ message: error.details[0].message });
+      return res.status(400).json({
+        success: false,
+        message: error.details[0].message
+      });
     }
 
     const { email, password } = value;
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
     }
 
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
     }
+
+    const now = new Date();
+    const hasPendingDeletion =
+      user.deletionScheduled &&
+      user.deletionScheduled.deleteAt &&
+      new Date(user.deletionScheduled.deleteAt) > now;
+
+    // Block only fully deactivated accounts with no active deletion grace period.
+    if (!user.isActive && !hasPendingDeletion) {
+      return res.status(403).json({
+        success: false,
+        message: 'This account has been deactivated'
+      });
+    }
+
+    // Update last login timestamp
+    user.lastLogin = new Date();
+    await user.save();
 
     const token = jwt.sign(
       { userId: user._id, role: user.role },
@@ -92,18 +134,35 @@ const login = async (req, res) => {
     );
 
     res.json({
+      success: true,
       message: 'Login successful',
       user: user.toJSON(),
-      token
+      token,
+      accountStatus: hasPendingDeletion
+        ? {
+            pendingDeletion: true,
+            deleteAt: user.deletionScheduled.deleteAt,
+            warning: 'Your account is scheduled for deletion. Cancel deletion in Privacy settings to keep your account.',
+            cancelUrl: '/api/privacy/cancel-deletion'
+          }
+        : {
+            pendingDeletion: false
+          }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
-// Logout (client-side handling)
+// Logout (client-side primarily handles token removal)
 const logout = (req, res) => {
-  res.json({ message: 'Logout successful' });
+  res.json({
+    success: true,
+    message: 'Logout successful'
+  });
 };
 
 module.exports = { register, login, logout };

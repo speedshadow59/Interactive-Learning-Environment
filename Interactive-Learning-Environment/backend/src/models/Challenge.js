@@ -48,6 +48,19 @@ const challengeSchema = new mongoose.Schema(
       type: Boolean,
       default: true
     },
+    // Block-based coding support
+    isBlockBased: {
+      type: Boolean,
+      default: true
+    },
+    blocklyXml: {
+      type: String,
+      default: ''
+    },
+    blocklyToolbox: {
+      type: Object,
+      default: {}
+    },
     blocklyTemplateUrl: String,
     order: Number,
     isPublished: {

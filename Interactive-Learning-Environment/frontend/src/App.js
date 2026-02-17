@@ -16,6 +16,7 @@ import NotFoundPage from './pages/NotFoundPage';
 // Components
 import Navigation from './components/Navigation';
 import PrivateRoute from './components/PrivateRoute';
+import AccessibilityPanel from './components/AccessibilityPanel';
 
 // Styles
 import './styles/App.css';
@@ -31,6 +32,7 @@ function App() {
     <Router>
       <div className="App">
         {user && <Navigation />}
+        <AccessibilityPanel />
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<LoginPage />} />

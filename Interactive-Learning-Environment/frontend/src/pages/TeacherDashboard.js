@@ -115,6 +115,34 @@ const TeacherDashboard = () => {
     }
   };
 
+  const handleExportCsv = () => {
+    const rows = [
+      ['Course Title', 'Difficulty', 'Target Year Groups', 'Students Enrolled', 'Published', 'Created At'],
+      ...(dashboardData?.courses || []).map((course) => [
+        course.title,
+        course.difficulty,
+        formatYearList(course.targetGrades),
+        `${course.enrolledCount}`,
+        course.isPublished ? 'Yes' : 'No',
+        course.createdAt ? new Date(course.createdAt).toLocaleDateString() : 'N/A'
+      ])
+    ];
+
+    const csv = rows
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `teacher-course-report-${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) return <div className="loading">Loading dashboard...</div>;
   if (error) return <div className="error">{error}</div>;
 
@@ -125,12 +153,20 @@ const TeacherDashboard = () => {
           <h1>Teacher Dashboard</h1>
           <p>Manage courses and track student progress.</p>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={() => setShowCreateForm(prev => !prev)}
-        >
-          {showCreateForm ? 'Close' : 'Create New Course'}
-        </button>
+        <div className="dashboard-header-actions">
+          <button
+            className="btn btn-secondary"
+            onClick={handleExportCsv}
+          >
+            Export CSV Report
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowCreateForm(prev => !prev)}
+          >
+            {showCreateForm ? 'Close' : 'Create New Course'}
+          </button>
+        </div>
       </div>
 
       {showCreateForm && (

@@ -4,7 +4,7 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #1f7a8c 0%, #155a66 100%);
+  background: radial-gradient(circle at top left, #1f7a8c 0%, #155a66 45%, #0f172a 100%);
   padding: 20px;
 }
 
@@ -12,9 +12,10 @@
   background: white;
   padding: 40px;
   border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 60px rgba(2, 6, 23, 0.4);
   width: 100%;
   max-width: 450px;
+  border: 1px solid #e2e8f0;
 }
 
 .auth-card {

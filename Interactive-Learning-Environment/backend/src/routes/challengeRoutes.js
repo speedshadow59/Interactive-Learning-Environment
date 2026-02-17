@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Challenge = require('../models/Challenge');
-const authMiddleware = require('../middleware/authMiddleware');
+const { authenticate } = require('../middleware/authMiddleware');
 
 // Get all challenges for a course
 router.get('/course/:courseId', async (req, res) => {
@@ -28,7 +28,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create challenge (teacher/admin only)
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   try {
     if (req.user.role === 'student') {
       return res.status(403).json({ message: 'Only teachers can create challenges' });

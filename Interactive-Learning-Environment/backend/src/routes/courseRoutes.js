@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware');
+const { authenticate } = require('../middleware/authMiddleware');
 const Course = require('../models/Course');
 
 // Get all courses
@@ -39,7 +39,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create course (teacher/admin only)
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   try {
     if (req.user.role === 'student') {
       return res.status(403).json({ message: 'Only teachers can create courses' });
@@ -64,7 +64,7 @@ router.post('/', authMiddleware, async (req, res) => {
 });
 
 // Enroll student in course
-router.post('/:id/enroll', authMiddleware, async (req, res) => {
+router.post('/:id/enroll', authenticate, async (req, res) => {
   try {
     if (req.user.role !== 'student') {
       return res.status(403).json({ message: 'Only students can enroll' });

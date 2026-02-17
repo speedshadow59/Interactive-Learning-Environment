@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware');
+const { authenticate } = require('../middleware/authMiddleware');
 const User = require('../models/User');
 const Course = require('../models/Course');
 const Submission = require('../models/Submission');
 const Progress = require('../models/Progress');
 
 // Teacher dashboard
-router.get('/teacher', authMiddleware, async (req, res) => {
+router.get('/teacher', authenticate, async (req, res) => {
   try {
     if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Access denied' });
@@ -37,7 +37,7 @@ router.get('/teacher', authMiddleware, async (req, res) => {
 });
 
 // Student dashboard
-router.get('/student', authMiddleware, async (req, res) => {
+router.get('/student', authenticate, async (req, res) => {
   try {
     if (req.user.role !== 'student') {
       return res.status(403).json({ message: 'Access denied' });
@@ -82,7 +82,7 @@ router.get('/student', authMiddleware, async (req, res) => {
 });
 
 // Student analytics (for teacher)
-router.get('/student/:studentId', authMiddleware, async (req, res) => {
+router.get('/student/:studentId', authenticate, async (req, res) => {
   try {
     if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Access denied' });
