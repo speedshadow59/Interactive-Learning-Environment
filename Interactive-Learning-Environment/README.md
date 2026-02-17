@@ -95,7 +95,19 @@ cp .env.example .env
 # Edit .env with your configuration
 ```
 
-4. Start the application:
+4. Seed the database with sample courses (Optional but recommended):
+```bash
+cd backend
+npm run seed
+```
+
+This will populate the database with:
+- **Introduction to Python** - Beginner-friendly Python course with 5 lessons and 5 challenges
+- **HTML & CSS Basics** - Web development fundamentals with 5 lessons and 5 challenges  
+- **JavaScript Fun Basics** - Interactive JavaScript course with 5 lessons and 5 challenges
+- Demo teacher account (Email: teacher@example.com, Password: teacher123)
+
+5. Start the application:
 ```bash
 # Terminal 1: Start backend
 cd backend
