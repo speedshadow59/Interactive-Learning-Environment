@@ -13,19 +13,55 @@ const StudentAnalytics = ({ courseId }) => {
       try {
         const courseRes = await apiClient.get(`/courses/${courseId}`);
         const course = courseRes.data;
-        
-        // Fetch details for each enrolled student
-        const studentPromises = course.enrolledStudents.map(async (studentId) => {
+
+        const enrolledStudents = course.enrolledStudents || [];
+
+        const studentPromises = enrolledStudents.map(async (student) => {
+          const studentId = typeof student === 'string' ? student : student?._id;
+
+          if (!studentId) {
+            return null;
+          }
+
           try {
             const progressRes = await apiClient.get(
               `/progress/student/${studentId}/course/${courseId}`
             );
+
             return {
+              _id: studentId,
+              studentId,
               ...progressRes.data,
-              studentInfo: progressRes.data.student
+              studentInfo: {
+                firstName:
+                  progressRes.data?.student?.firstName ||
+                  student?.firstName ||
+                  'Student',
+                lastName:
+                  progressRes.data?.student?.lastName ||
+                  student?.lastName ||
+                  '',
+                email:
+                  progressRes.data?.student?.email ||
+                  student?.email ||
+                  '',
+              }
             };
           } catch (err) {
-            return null;
+            return {
+              _id: studentId,
+              studentId,
+              studentInfo: {
+                firstName: student?.firstName || 'Student',
+                lastName: student?.lastName || '',
+                email: student?.email || '',
+              },
+              completedChallenges: [],
+              totalPoints: 0,
+              currentLevel: 1,
+              badges: [],
+              lastActivityAt: null,
+            };
           }
         });
 
@@ -46,8 +82,13 @@ const StudentAnalytics = ({ courseId }) => {
   const handleStudentClick = async (studentProgress) => {
     setSelectedStudent(studentProgress);
     try {
+      const studentId = studentProgress.studentId || studentProgress.student?._id || studentProgress.student;
+      if (!studentId) {
+        return;
+      }
+
       const analyticsRes = await apiClient.get(
-        `/dashboard/student/${studentProgress.student._id || studentProgress.student}`
+        `/dashboard/student/${studentId}`
       );
       setAnalytics(analyticsRes.data);
     } catch (err) {

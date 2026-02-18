@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/authMiddleware');
 const Course = require('../models/Course');
+const User = require('../models/User');
 
 // Get all courses
 router.get('/', async (req, res) => {
@@ -27,7 +28,8 @@ router.get('/:id', async (req, res) => {
   try {
     const course = await Course.findById(req.params.id)
       .populate('instructor')
-      .populate('challenges');
+      .populate('challenges')
+      .populate('enrolledStudents', 'firstName lastName email');
     
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
@@ -75,12 +77,24 @@ router.post('/:id/enroll', authenticate, async (req, res) => {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    if (!course.enrolledStudents.includes(req.user.userId)) {
-      course.enrolledStudents.push(req.user.userId);
-      await course.save();
-    }
+    await Course.findByIdAndUpdate(
+      req.params.id,
+      { $addToSet: { enrolledStudents: req.user.userId } },
+      { new: true }
+    );
 
-    res.json({ message: 'Enrolled successfully', course });
+    await User.findByIdAndUpdate(
+      req.user.userId,
+      { $addToSet: { enrolledCourses: req.params.id } },
+      { new: true }
+    );
+
+    const updatedCourse = await Course.findById(req.params.id)
+      .populate('instructor', 'firstName lastName')
+      .populate('challenges')
+      .populate('enrolledStudents', 'firstName lastName email');
+
+    res.json({ message: 'Enrolled successfully', course: updatedCourse });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

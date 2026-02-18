@@ -157,6 +157,39 @@ const StudentDashboard = () => {
 
       <div className="section-card">
         <div className="section-header">
+          <h2>Assigned Work</h2>
+          <span className="section-subtitle">Track deadlines and completion status</span>
+        </div>
+        {dashboardData?.assignments?.length > 0 ? (
+          <ul className="progress-list">
+            {dashboardData.assignments.map((assignment) => (
+              <li key={assignment.id}>
+                <div>
+                  <strong>{assignment.title}</strong>
+                  <div>{assignment.courseTitle} • {assignment.challengeTitle}</div>
+                  <div>Due: {new Date(assignment.dueDate).toLocaleString()}</div>
+                </div>
+                <div className="course-meta">
+                  <span className="badge">
+                    {assignment.status === 'completed'
+                      ? 'Completed'
+                      : assignment.status === 'completed_late'
+                        ? 'Completed Late'
+                        : assignment.status === 'overdue'
+                          ? 'Overdue'
+                          : 'Pending'}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="empty-state">No assignments yet.</p>
+        )}
+      </div>
+
+      <div className="section-card">
+        <div className="section-header">
           <h2>Recommended Courses</h2>
           {dashboardData?.user?.grade && (
             <span className="section-subtitle">

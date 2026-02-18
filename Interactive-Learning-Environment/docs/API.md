@@ -249,6 +249,43 @@ Response (201):
 
 #### Get Student Submissions
 ```
+
+#### Get Course Submissions (Teacher/Admin)
+```
+GET /submissions/course/:courseId
+Authorization: Bearer <token>
+
+Response (200):
+{
+  "submissions": [
+    {
+      "_id": "submission_id",
+      "student": { "firstName": "Alice", "lastName": "Smith", "email": "alice@student.edu" },
+      "challenge": { "title": "Loop Basics", "difficulty": "easy" },
+      "result": "passed",
+      "feedback": "Great loop usage",
+      "submittedAt": "2026-02-18T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### Add/Update Submission Feedback (Teacher/Admin)
+```
+PATCH /submissions/:submissionId/feedback
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "feedback": "Nice approach. Add comments to explain your logic."
+}
+
+Response (200):
+{
+  "message": "Feedback saved",
+  "submission": { ... }
+}
+```
 GET /submissions/student/:studentId
 Authorization: Bearer <token>
 
@@ -321,6 +358,44 @@ Response (200):
 
 #### Teacher Dashboard
 ```
+
+#### Teacher Analytics Summary
+```
+GET /dashboard/teacher/analytics
+Authorization: Bearer <token>
+
+Response (200):
+{
+  "summary": {
+    "totalCourses": 3,
+    "totalStudents": 28,
+    "totalAssignments": 12,
+    "overdueAssignments": 2,
+    "totalSubmissions": 140,
+    "passRate": 84
+  },
+  "courseBreakdown": [
+    {
+      "id": "course_id",
+      "title": "Python Basics",
+      "enrolledCount": 10,
+      "totalSubmissions": 40,
+      "passRate": 88,
+      "averagePoints": 420,
+      "completedChallenges": 24,
+      "isPublished": true
+    }
+  ]
+}
+```
+
+#### Teacher Analytics CSV Export
+```
+GET /dashboard/teacher/export.csv
+Authorization: Bearer <token>
+
+Response (200): text/csv download
+```
 GET /dashboard/teacher
 Authorization: Bearer <token>
 
@@ -333,6 +408,94 @@ Response (200):
 ```
 
 #### Student Analytics (Teacher)
+```
+
+### Assignments
+
+#### Get Assignment Form Options (Teacher/Admin)
+```
+GET /assignments/teacher/options
+Authorization: Bearer <token>
+
+Response (200):
+{
+  "courses": [
+    {
+      "id": "course_id",
+      "title": "Python Basics",
+      "challenges": [{ "id": "challenge_id", "title": "Variables" }],
+      "students": [{ "id": "student_id", "name": "Alice Smith", "email": "alice@student.edu" }]
+    }
+  ]
+}
+```
+
+#### Create Assignment (Teacher/Admin)
+```
+POST /assignments
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "title": "Homework 1",
+  "description": "Complete loop challenge",
+  "courseId": "course_id",
+  "challengeId": "challenge_id",
+  "dueDate": "2026-02-28T18:00:00.000Z",
+  "assignedTo": ["student_id_1", "student_id_2"]
+}
+
+Response (201):
+{
+  "message": "Assignment created",
+  "assignment": { ... }
+}
+```
+
+#### Get Teacher Assignments with Tracking
+```
+GET /assignments/teacher
+Authorization: Bearer <token>
+
+Response (200):
+{
+  "assignments": [
+    {
+      "id": "assignment_id",
+      "title": "Homework 1",
+      "courseTitle": "Python Basics",
+      "challengeTitle": "Loops",
+      "assignedCount": 20,
+      "submittedCount": 14,
+      "lateCount": 2,
+      "missingCount": 4,
+      "pendingCount": 6,
+      "isOverdue": false,
+      "missingStudentNames": ["Student A", "Student B"],
+      "pendingStudentNames": ["Student C"]
+    }
+  ]
+}
+```
+
+#### Get Student Assignments
+```
+GET /assignments/student
+Authorization: Bearer <token>
+
+Response (200):
+{
+  "assignments": [
+    {
+      "id": "assignment_id",
+      "title": "Homework 1",
+      "courseTitle": "Python Basics",
+      "challengeTitle": "Loops",
+      "dueDate": "2026-02-28T18:00:00.000Z",
+      "status": "pending"
+    }
+  ]
+}
 ```
 GET /dashboard/student/:studentId
 Authorization: Bearer <token>

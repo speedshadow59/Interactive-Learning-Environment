@@ -37,6 +37,7 @@ app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/courses', require('./routes/courseRoutes'));
 app.use('/api/challenges', require('./routes/challengeRoutes'));
 app.use('/api/submissions', require('./routes/submissionRoutes'));
+app.use('/api/assignments', require('./routes/assignmentRoutes'));
 app.use('/api/progress', require('./routes/progressRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/badges', require('./routes/badgeRoutes'));

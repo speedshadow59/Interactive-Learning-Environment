@@ -8,7 +8,8 @@
     "dev": "nodemon src/server.js",
     "test": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "eslint src/**/*.js"
+    "lint": "eslint src/**/*.js",
+    "backfill:enrollments": "node src/scripts/backfillEnrollments.js"
   },
   "keywords": [
     "education",

@@ -12,6 +12,11 @@ const submissionSchema = new mongoose.Schema(
       ref: 'Challenge',
       required: true
     },
+    assignment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Assignment',
+      default: null
+    },
     course: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Course',

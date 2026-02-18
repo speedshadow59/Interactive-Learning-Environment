@@ -89,3 +89,30 @@
 - Docker containerization
 - RESTful API architecture
 - Continuous Integration/Deployment ready
+
+## AT2 Evidence Matrix (Current Build)
+
+| Requirement | Status | Implementation Evidence |
+| --- | --- | --- |
+| FR1-FR2 Registration/Login | ✅ | `backend/src/controllers/authController.js`, `backend/src/routes/authRoutes.js`, `frontend/src/pages/LoginPage.js`, `frontend/src/pages/RegisterPage.js` |
+| FR4 Student progress view | ✅ | `GET /dashboard/student`, `frontend/src/pages/StudentDashboard.js` |
+| FR6-FR9 Course management/enrolment | ✅ | `backend/src/routes/courseRoutes.js`, `frontend/src/pages/TeacherDashboard.js`, `frontend/src/pages/CoursesPage.js` |
+| FR10-FR14 Challenge + block/text coding + execution | ✅ | `frontend/src/components/BlockEditor.js`, `backend/src/routes/challengeRoutes.js`, `backend/src/routes/executeRoutes.js` |
+| FR15-FR18 Progress tracking + points/time | ✅ | `backend/src/models/Progress.js`, `backend/src/models/Submission.js`, `backend/src/routes/progressRoutes.js` |
+| FR19-FR20 Gamification badges/points | ✅ | `backend/src/models/Badge.js`, `backend/src/routes/badgeRoutes.js`, `frontend/src/components/BadgesDisplay.js` |
+| FR23 Teacher analytics dashboard | ✅ | `GET /dashboard/teacher`, `GET /dashboard/teacher/analytics`, `frontend/src/pages/TeacherDashboard.js` |
+| FR24 Progress report export | ✅ | `GET /dashboard/teacher/export.csv`, Teacher dashboard Export button |
+| FR25 Teacher feedback on submissions | ✅ | `PATCH /submissions/:id/feedback`, `GET /submissions/course/:courseId` in `backend/src/routes/submissionRoutes.js` |
+| FR26 Performance/completion trends | ✅ | Per-course pass rate and completion metrics in `GET /dashboard/teacher/analytics` |
+| Objective 3 Assignment workflow with deadlines | ✅ | `backend/src/models/Assignment.js`, `backend/src/routes/assignmentRoutes.js`, `frontend/src/pages/TeacherDashboard.js`, `frontend/src/pages/StudentDashboard.js` |
+| NFR5-NFR6 Auth security | ✅ | bcrypt hashing + JWT in auth controller and middleware |
+| NFR8-NFR9 Input sanitization + RBAC | ✅ | `backend/src/middleware/errorHandler.js`, role checks across routes |
+| NFR11 Accessibility WCAG 2.1 AA | ✅ | `frontend/src/components/AccessibilityPanel.js`, `frontend/src/styles/Accessibility.css` |
+| NFR13 Clear error messages | ✅ | Consistent API and UI error handling in route responses and dashboards |
+| NFR17-NFR18 Logging and graceful errors | ✅ | Centralized error middleware in `backend/src/middleware/errorHandler.js` |
+
+### Remaining Priority Items
+
+- FR5 Teacher roster management UI can be expanded with class grouping views and filters.
+- FR21 Leaderboard remains optional in current AT2 scope and can be added as stretch.
+- Formal validation evidence still required: user testing rounds, accessibility audit output, and load/security testing reports.

@@ -112,6 +112,13 @@ const createRateLimiter = (windowMs, maxRequests) => {
   const attempts = new Map();
 
   return (req, res, next) => {
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const limiterDisabled = process.env.DISABLE_RATE_LIMIT === 'true';
+
+    if (isDevelopment || limiterDisabled) {
+      return next();
+    }
+
     const key = req.ip;
     const now = Date.now();
     const userAttempts = attempts.get(key) || [];

@@ -123,6 +123,19 @@ async function seed() {
       isPublished: true,
       enrolledStudents: [student1._id]
     });
+
+    teacher1.teachingCourses = [course1._id, course3._id];
+    teacher2.teachingCourses = [course2._id];
+    await teacher1.save();
+    await teacher2.save();
+
+    student1.enrolledCourses = [course1._id, course2._id, course3._id];
+    student2.enrolledCourses = [course1._id, course2._id];
+    student3.enrolledCourses = [course1._id];
+    await student1.save();
+    await student2.save();
+    await student3.save();
+
     console.log('✅ Courses created');
 
     // Create challenges for JavaScript Fundamentals
