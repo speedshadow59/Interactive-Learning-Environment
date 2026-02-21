@@ -25,6 +25,10 @@ const TeacherDashboard = () => {
   const [markDrafts, setMarkDrafts] = useState({});
   const [savingFeedbackId, setSavingFeedbackId] = useState(null);
   const [savingMarkId, setSavingMarkId] = useState(null);
+  const [rosterFilterCourseId, setRosterFilterCourseId] = useState('');
+  const [rosterFilterYearGroup, setRosterFilterYearGroup] = useState('');
+  const [rosterRiskOnly, setRosterRiskOnly] = useState(false);
+  const [rosterLoading, setRosterLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submittingAssignment, setSubmittingAssignment] = useState(false);
   const [formData, setFormData] = useState({
@@ -51,11 +55,21 @@ const TeacherDashboard = () => {
   };
   const formatYearList = (years = []) => years.map(formatYearLabel).join(', ');
 
+  const buildDashboardUrl = ({ courseId = '', yearGroup = '', riskOnly = false } = {}) => {
+    const params = new URLSearchParams();
+    if (courseId) params.set('courseId', courseId);
+    if (yearGroup) params.set('yearGroup', yearGroup);
+    if (riskOnly) params.set('riskOnly', 'true');
+
+    const query = params.toString();
+    return query ? `/dashboard/teacher?${query}` : '/dashboard/teacher';
+  };
+
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
         const [dashboardResponse, assignmentsResponse, optionsResponse, analyticsResponse] = await Promise.all([
-          apiClient.get('/dashboard/teacher'),
+          apiClient.get(buildDashboardUrl()),
           apiClient.get('/assignments/teacher'),
           apiClient.get('/assignments/teacher/options'),
           apiClient.get('/dashboard/teacher/analytics')
@@ -76,7 +90,13 @@ const TeacherDashboard = () => {
 
   const refreshDashboard = async () => {
     const [dashboardResponse, assignmentsResponse, optionsResponse, analyticsResponse] = await Promise.all([
-      apiClient.get('/dashboard/teacher'),
+      apiClient.get(
+        buildDashboardUrl({
+          courseId: rosterFilterCourseId,
+          yearGroup: rosterFilterYearGroup,
+          riskOnly: rosterRiskOnly,
+        })
+      ),
       apiClient.get('/assignments/teacher'),
       apiClient.get('/assignments/teacher/options'),
       apiClient.get('/dashboard/teacher/analytics')
@@ -86,6 +106,43 @@ const TeacherDashboard = () => {
     setAssignmentData(assignmentsResponse.data?.assignments || []);
     setAssignmentOptions(optionsResponse.data?.courses || []);
     setTeacherAnalytics(analyticsResponse.data);
+  };
+
+  const handleApplyRosterFilters = async () => {
+    setRosterLoading(true);
+    setError('');
+
+    try {
+      const response = await apiClient.get(
+        buildDashboardUrl({
+          courseId: rosterFilterCourseId,
+          yearGroup: rosterFilterYearGroup,
+          riskOnly: rosterRiskOnly,
+        })
+      );
+      setDashboardData(response.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Unable to apply roster filters');
+    } finally {
+      setRosterLoading(false);
+    }
+  };
+
+  const handleResetRosterFilters = async () => {
+    setRosterFilterCourseId('');
+    setRosterFilterYearGroup('');
+    setRosterRiskOnly(false);
+    setRosterLoading(true);
+    setError('');
+
+    try {
+      const response = await apiClient.get('/dashboard/teacher');
+      setDashboardData(response.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Unable to reset roster filters');
+    } finally {
+      setRosterLoading(false);
+    }
   };
 
   const selectedCourseOption = assignmentOptions.find((course) => course.id === assignmentForm.courseId);
@@ -632,7 +689,7 @@ const TeacherDashboard = () => {
         </div>
         <div className="stat-card">
           <h3>Total Students</h3>
-          <p className="stat-value">{dashboardData?.totalStudents || 0}</p>
+          <p className="stat-value">{dashboardData?.uniqueStudents || dashboardData?.totalStudents || 0}</p>
         </div>
         <div className="stat-card">
           <h3>Assignments</h3>
@@ -690,6 +747,118 @@ const TeacherDashboard = () => {
           </div>
         ) : (
           <p className="empty-state">No courses created yet.</p>
+        )}
+      </div>
+
+      <div className="section-card">
+        <div className="section-header">
+          <h2>Student Roster</h2>
+          <span className="section-subtitle">Filter by course and year group, with at-risk highlighting</span>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="rosterCourse">Course</label>
+            <select
+              id="rosterCourse"
+              value={rosterFilterCourseId}
+              onChange={(event) => setRosterFilterCourseId(event.target.value)}
+            >
+              <option value="">All courses</option>
+              {(dashboardData?.rosterFilters?.courseOptions || []).map((course) => (
+                <option key={course.id} value={course.id}>{course.title}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="rosterYear">Year Group</label>
+            <select
+              id="rosterYear"
+              value={rosterFilterYearGroup}
+              onChange={(event) => setRosterFilterYearGroup(event.target.value)}
+            >
+              <option value="">All year groups</option>
+              {(dashboardData?.rosterFilters?.yearGroupOptions || []).map((year) => (
+                <option key={year} value={year}>{formatYearLabel(year)}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group form-toggle">
+            <label className="toggle-label" style={{ marginTop: '24px' }}>
+              <input
+                type="checkbox"
+                checked={rosterRiskOnly}
+                onChange={(event) => setRosterRiskOnly(event.target.checked)}
+              />
+              <span>At-risk only</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="form-actions" style={{ marginBottom: '12px' }}>
+          <button
+            className="btn btn-primary"
+            type="button"
+            onClick={handleApplyRosterFilters}
+            disabled={rosterLoading}
+          >
+            {rosterLoading ? 'Applying...' : 'Apply Filters'}
+          </button>
+          <button
+            className="btn btn-secondary"
+            type="button"
+            onClick={handleResetRosterFilters}
+            disabled={rosterLoading}
+          >
+            Reset
+          </button>
+        </div>
+
+        <ul className="progress-list" style={{ marginBottom: '12px' }}>
+          <li>
+            <span>Visible Students</span>
+            <strong>{dashboardData?.rosterSummary?.filteredStudents || 0}</strong>
+          </li>
+          <li>
+            <span>At-risk Students</span>
+            <strong>{dashboardData?.rosterSummary?.atRiskStudents || 0}</strong>
+          </li>
+        </ul>
+
+        {rosterLoading ? (
+          <p className="empty-state">Loading roster...</p>
+        ) : (dashboardData?.roster || []).length > 0 ? (
+          <ul className="progress-list">
+            {dashboardData.roster.map((student) => (
+              <li key={student.id}>
+                <div>
+                  <strong>{student.name}</strong>
+                  <div>{student.email}</div>
+                  <div>
+                    Year {student.grade || 'N/A'} • {student.enrolledCourseCount} course(s) • {student.totalPoints || 0} points
+                  </div>
+                  <div>
+                    Assignments: {student.assignmentSummary?.completed || 0} completed, {student.assignmentSummary?.pending || 0} pending, {student.assignmentSummary?.overdue || 0} overdue
+                  </div>
+                  <div>
+                    Last active: {student.lastActivityAt ? new Date(student.lastActivityAt).toLocaleDateString() : 'No activity yet'}
+                  </div>
+                  {student.riskReasons?.length > 0 && (
+                    <div className="section-subtitle">{student.riskReasons.join(' • ')}</div>
+                  )}
+                </div>
+                <div>
+                  <span className={`badge ${student.isAtRisk ? '' : 'badge-muted'}`}>
+                    {student.isAtRisk ? 'At Risk' : 'On Track'}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="empty-state">No students match the selected filters.</p>
         )}
       </div>
 

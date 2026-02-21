@@ -14,6 +14,242 @@ const escapeCsv = (value) => {
   return `"${safeValue.replace(/"/g, '""')}"`;
 };
 
+const parseBoolean = (value) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value !== 'string') return false;
+  return ['true', '1', 'yes', 'on'].includes(value.toLowerCase());
+};
+
+const buildTeacherRoster = async (teacherId, role, filters = {}) => {
+  const baseCourseFilter = isTeacherOrAdmin(role) ? {} : { instructor: teacherId };
+  const allCourses = await Course.find(baseCourseFilter, 'title');
+
+  const courseFilter = { ...baseCourseFilter };
+
+  if (filters.courseId) {
+    courseFilter._id = filters.courseId;
+  }
+
+  const courses = await Course.find(courseFilter)
+    .populate('enrolledStudents', 'firstName lastName email grade');
+
+  const courseIds = courses.map((course) => course._id);
+  const courseIdSet = new Set(courseIds.map((courseId) => courseId.toString()));
+
+  const studentMap = new Map();
+  courses.forEach((course) => {
+    const courseId = course._id.toString();
+    course.enrolledStudents.forEach((student) => {
+      const studentId = student._id.toString();
+      const existing = studentMap.get(studentId);
+
+      if (existing) {
+        existing.courseIds.add(courseId);
+      } else {
+        studentMap.set(studentId, {
+          id: student._id,
+          firstName: student.firstName,
+          lastName: student.lastName,
+          email: student.email,
+          grade: student.grade,
+          courseIds: new Set([courseId]),
+        });
+      }
+    });
+  });
+
+  const allStudentIds = Array.from(studentMap.keys());
+
+  const assignments = courseIds.length
+    ? await Assignment.find(
+        { course: { $in: courseIds }, isPublished: true },
+        'course assignedTo dueDate'
+      )
+    : [];
+
+  const submissions = courseIds.length
+    ? await Submission.find(
+        { course: { $in: courseIds } },
+        'course assignment student result submittedAt'
+      )
+    : [];
+
+  const progressRows = allStudentIds.length && courseIds.length
+    ? await Progress.find(
+        {
+          student: { $in: allStudentIds },
+          course: { $in: courseIds },
+        },
+        'student course lastActivityAt totalPoints'
+      )
+    : [];
+
+  const latestByAssignmentStudent = submissions.reduce((acc, submission) => {
+    const assignmentId = submission.assignment?.toString();
+    const studentId = submission.student?.toString();
+
+    if (!assignmentId || !studentId) return acc;
+
+    const key = `${assignmentId}:${studentId}`;
+    const existing = acc[key];
+
+    if (!existing || new Date(submission.submittedAt) > new Date(existing.submittedAt)) {
+      acc[key] = submission;
+    }
+
+    return acc;
+  }, {});
+
+  const failedSubmissionCounts = submissions.reduce((acc, submission) => {
+    if (submission.result !== 'failed') return acc;
+    const studentId = submission.student?.toString();
+    const courseId = submission.course?.toString();
+    if (!studentId || !courseId || !courseIdSet.has(courseId)) return acc;
+
+    acc[studentId] = (acc[studentId] || 0) + 1;
+    return acc;
+  }, {});
+
+  const studentProgressMap = progressRows.reduce((acc, row) => {
+    const studentId = row.student.toString();
+    if (!acc[studentId]) {
+      acc[studentId] = {
+        totalPoints: 0,
+        lastActivityAt: null,
+      };
+    }
+
+    acc[studentId].totalPoints += row.totalPoints || 0;
+
+    if (row.lastActivityAt) {
+      const current = acc[studentId].lastActivityAt;
+      if (!current || new Date(row.lastActivityAt) > new Date(current)) {
+        acc[studentId].lastActivityAt = row.lastActivityAt;
+      }
+    }
+
+    return acc;
+  }, {});
+
+  const assignmentStatusByStudent = assignments.reduce((acc, assignment) => {
+    const dueDate = assignment.dueDate ? new Date(assignment.dueDate) : null;
+
+    assignment.assignedTo.forEach((studentIdRef) => {
+      const studentId = studentIdRef.toString();
+      if (!studentMap.has(studentId)) return;
+
+      if (!acc[studentId]) {
+        acc[studentId] = {
+          assigned: 0,
+          completed: 0,
+          overdue: 0,
+          pending: 0,
+        };
+      }
+
+      const key = `${assignment._id.toString()}:${studentId}`;
+      const latestSubmission = latestByAssignmentStudent[key];
+      const isCompleted = latestSubmission?.result === 'passed';
+      const isOverdue = dueDate && dueDate < new Date() && !isCompleted;
+
+      acc[studentId].assigned += 1;
+
+      if (isCompleted) {
+        acc[studentId].completed += 1;
+      } else if (isOverdue) {
+        acc[studentId].overdue += 1;
+      } else {
+        acc[studentId].pending += 1;
+      }
+    });
+
+    return acc;
+  }, {});
+
+  const yearGroupFilter = Number(filters.yearGroup);
+  const hasYearGroupFilter = Number.isFinite(yearGroupFilter) && yearGroupFilter > 0;
+  const riskOnly = parseBoolean(filters.riskOnly);
+
+  const roster = Array.from(studentMap.values())
+    .map((student) => {
+      const studentId = student.id.toString();
+      const progress = studentProgressMap[studentId] || { totalPoints: 0, lastActivityAt: null };
+      const assignmentStatus = assignmentStatusByStudent[studentId] || {
+        assigned: 0,
+        completed: 0,
+        overdue: 0,
+        pending: 0,
+      };
+
+      const lastActivityDate = progress.lastActivityAt ? new Date(progress.lastActivityAt) : null;
+      const inactiveDays = lastActivityDate
+        ? Math.floor((Date.now() - lastActivityDate.getTime()) / (1000 * 60 * 60 * 24))
+        : null;
+
+      const riskReasons = [];
+
+      if (assignmentStatus.overdue > 0) {
+        riskReasons.push('Overdue assignments');
+      }
+
+      if ((failedSubmissionCounts[studentId] || 0) >= 2) {
+        riskReasons.push('Multiple failed submissions');
+      }
+
+      if (!lastActivityDate || (inactiveDays !== null && inactiveDays > 14)) {
+        riskReasons.push('Low recent activity');
+      }
+
+      return {
+        id: student.id,
+        name: `${student.firstName} ${student.lastName}`,
+        email: student.email,
+        grade: student.grade || null,
+        enrolledCourseCount: student.courseIds.size,
+        totalPoints: progress.totalPoints,
+        lastActivityAt: progress.lastActivityAt,
+        inactiveDays,
+        assignmentSummary: assignmentStatus,
+        failedSubmissions: failedSubmissionCounts[studentId] || 0,
+        isAtRisk: riskReasons.length > 0,
+        riskReasons,
+      };
+    })
+    .filter((student) => (hasYearGroupFilter ? student.grade === yearGroupFilter : true))
+    .filter((student) => (riskOnly ? student.isAtRisk : true))
+    .sort((a, b) => {
+      if (a.isAtRisk !== b.isAtRisk) return a.isAtRisk ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+
+  const yearGroups = Array.from(
+    new Set(
+      Array.from(studentMap.values())
+        .map((student) => student.grade)
+        .filter((grade) => Number.isFinite(grade))
+    )
+  ).sort((a, b) => a - b);
+
+  return {
+    roster,
+    rosterSummary: {
+      totalRosterStudents: allStudentIds.length,
+      filteredStudents: roster.length,
+      atRiskStudents: roster.filter((student) => student.isAtRisk).length,
+    },
+    rosterFilters: {
+      courseId: filters.courseId || '',
+      yearGroup: hasYearGroupFilter ? yearGroupFilter : '',
+      riskOnly,
+      courseOptions: allCourses.map((course) => ({
+        id: course._id,
+        title: course.title,
+      })),
+      yearGroupOptions: yearGroups,
+    },
+  };
+};
+
 const buildTeacherAnalytics = async (teacherId, role) => {
   const courseFilter = isTeacherOrAdmin(role) ? {} : { instructor: teacherId };
   const courses = await Course.find(courseFilter)
@@ -117,12 +353,28 @@ router.get('/teacher', authenticate, async (req, res) => {
     }
 
     const courseFilter = isTeacherOrAdmin(req.user.role) ? {} : { instructor: req.user.userId };
+    if (req.query.courseId) {
+      courseFilter._id = req.query.courseId;
+    }
+
     const courses = await Course.find(courseFilter)
       .populate('enrolledStudents');
+
+    const rosterData = await buildTeacherRoster(req.user.userId, req.user.role, {
+      courseId: req.query.courseId,
+      yearGroup: req.query.yearGroup,
+      riskOnly: req.query.riskOnly,
+    });
+
+    const uniqueStudentIds = new Set();
+    courses.forEach((course) => {
+      course.enrolledStudents.forEach((student) => uniqueStudentIds.add(student._id.toString()));
+    });
 
     const dashboardData = {
       totalCourses: courses.length,
       totalStudents: courses.reduce((sum, c) => sum + c.enrolledStudents.length, 0),
+      uniqueStudents: uniqueStudentIds.size,
       courses: courses.map(course => ({
         id: course._id,
         title: course.title,
@@ -131,7 +383,10 @@ router.get('/teacher', authenticate, async (req, res) => {
         difficulty: course.difficulty,
         isPublished: course.isPublished,
         createdAt: course.createdAt
-      }))
+      })),
+      roster: rosterData.roster,
+      rosterSummary: rosterData.rosterSummary,
+      rosterFilters: rosterData.rosterFilters,
     };
 
     res.json(dashboardData);
