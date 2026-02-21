@@ -28,6 +28,7 @@ const TeacherDashboard = () => {
   const [rosterFilterCourseId, setRosterFilterCourseId] = useState('');
   const [rosterFilterYearGroup, setRosterFilterYearGroup] = useState('');
   const [rosterRiskOnly, setRosterRiskOnly] = useState(false);
+  const [assignmentFilter, setAssignmentFilter] = useState('all');
   const [rosterLoading, setRosterLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submittingAssignment, setSubmittingAssignment] = useState(false);
@@ -146,6 +147,28 @@ const TeacherDashboard = () => {
   };
 
   const selectedCourseOption = assignmentOptions.find((course) => course.id === assignmentForm.courseId);
+
+  const assignmentCounts = assignmentData.reduce(
+    (acc, assignment) => {
+      const hasMissing = (assignment.missingCount || 0) > 0;
+      const isOverdue = Boolean(assignment.isOverdue && assignment.pendingCount > 0);
+
+      acc.all += 1;
+      if (isOverdue) acc.overdue += 1;
+      if (hasMissing) acc.missing += 1;
+      if (!isOverdue) acc.active += 1;
+      return acc;
+    },
+    { all: 0, overdue: 0, missing: 0, active: 0 }
+  );
+
+  const filteredAssignments = assignmentData.filter((assignment) => {
+    if (assignmentFilter === 'all') return true;
+    if (assignmentFilter === 'overdue') return Boolean(assignment.isOverdue && assignment.pendingCount > 0);
+    if (assignmentFilter === 'missing') return (assignment.missingCount || 0) > 0;
+    if (assignmentFilter === 'active') return !(assignment.isOverdue && assignment.pendingCount > 0);
+    return true;
+  });
 
   const loadCourseSubmissions = async (courseId) => {
     if (!courseId) {
@@ -797,7 +820,7 @@ const TeacherDashboard = () => {
           </div>
         </div>
 
-        <div className="form-actions" style={{ marginBottom: '12px' }}>
+        <div className="form-actions form-actions--spaced">
           <button
             className="btn btn-primary"
             type="button"
@@ -816,7 +839,7 @@ const TeacherDashboard = () => {
           </button>
         </div>
 
-        <ul className="progress-list" style={{ marginBottom: '12px' }}>
+        <ul className="progress-list progress-list--compact">
           <li>
             <span>Visible Students</span>
             <strong>{dashboardData?.rosterSummary?.filteredStudents || 0}</strong>
@@ -981,11 +1004,23 @@ const TeacherDashboard = () => {
       <div className="section-card">
         <div className="section-header">
           <h2>Assignments</h2>
-          <span className="section-subtitle">Deadline and completion tracking</span>
+          <div className="section-header-controls">
+            <span className="section-subtitle">Deadline and completion tracking</span>
+            <select
+              className="filter-select"
+              value={assignmentFilter}
+              onChange={(event) => setAssignmentFilter(event.target.value)}
+            >
+              <option value="all">All ({assignmentCounts.all})</option>
+              <option value="overdue">Overdue ({assignmentCounts.overdue})</option>
+              <option value="missing">With Missing ({assignmentCounts.missing})</option>
+              <option value="active">Active ({assignmentCounts.active})</option>
+            </select>
+          </div>
         </div>
-        {assignmentData.length > 0 ? (
+        {filteredAssignments.length > 0 ? (
           <ul className="progress-list">
-            {assignmentData.map((assignment) => (
+            {filteredAssignments.map((assignment) => (
               <li key={assignment.id}>
                 <div>
                   <strong>{assignment.title}</strong>
@@ -1002,7 +1037,7 @@ const TeacherDashboard = () => {
                     </div>
                   )}
                 </div>
-                <div>
+                <div className="assignment-badges">
                   <span className="badge">{assignment.submittedCount}/{assignment.assignedCount} submitted</span>
                   <span className="badge">Late: {assignment.lateCount || 0}</span>
                   <span className="badge">Missing: {assignment.missingCount || 0}</span>
@@ -1014,7 +1049,7 @@ const TeacherDashboard = () => {
             ))}
           </ul>
         ) : (
-          <p className="empty-state">No assignments created yet.</p>
+          <p className="empty-state">No assignments match this filter.</p>
         )}
       </div>
     </div>

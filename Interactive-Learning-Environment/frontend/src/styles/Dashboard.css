@@ -130,6 +130,21 @@
   font-size: 14px;
 }
 
+.section-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fcfdff;
+  color: var(--text);
+}
+
 .courses-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -364,6 +379,21 @@
   justify-content: flex-end;
 }
 
+.form-actions--spaced {
+  margin-bottom: 12px;
+}
+
+.progress-list--compact {
+  margin-bottom: 12px;
+}
+
+.assignment-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .progress-list li:last-child {
   border-bottom: none;
 }
@@ -389,5 +419,9 @@
   .dashboard-header-meta {
     width: 100%;
     text-align: left;
+  }
+
+  .assignment-badges {
+    justify-content: flex-start;
   }
 }
