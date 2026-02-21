@@ -6,6 +6,7 @@ import '../styles/Dashboard.css';
 const StudentDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [availableCourses, setAvailableCourses] = useState([]);
+  const [showOverdueOnly, setShowOverdueOnly] = useState(false);
   const [enrollingId, setEnrollingId] = useState(null);
   const [enrollError, setEnrollError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -78,6 +79,11 @@ const StudentDashboard = () => {
       ? course.targetGrades.includes(studentGrade)
       : false
   );
+  const allAssignments = dashboardData?.assignments || [];
+  const overdueAssignments = allAssignments.filter(
+    (assignment) => assignment.status === 'overdue'
+  );
+  const visibleAssignments = showOverdueOnly ? overdueAssignments : allAssignments;
 
   return (
     <div className="dashboard student-dashboard">
@@ -112,6 +118,10 @@ const StudentDashboard = () => {
               ? formatYearLabel(dashboardData.user.grade)
               : `Years ${yearGroups[0]}-${yearGroups[yearGroups.length - 1]} (Primary/Secondary)`}
           </p>
+        </div>
+        <div className="stat-card">
+          <h3>Overdue Assignments</h3>
+          <p className="stat-value">{overdueAssignments.length}</p>
         </div>
       </div>
 
@@ -158,11 +168,20 @@ const StudentDashboard = () => {
       <div className="section-card">
         <div className="section-header">
           <h2>Assigned Work</h2>
-          <span className="section-subtitle">Track deadlines and completion status</span>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <span className="section-subtitle">Track deadlines and completion status</span>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowOverdueOnly(prev => !prev)}
+              type="button"
+            >
+              {showOverdueOnly ? 'Show All' : 'Overdue Only'}
+            </button>
+          </div>
         </div>
-        {dashboardData?.assignments?.length > 0 ? (
+        {visibleAssignments.length > 0 ? (
           <ul className="progress-list">
-            {dashboardData.assignments.map((assignment) => (
+            {visibleAssignments.map((assignment) => (
               <li key={assignment.id}>
                 <div>
                   <strong>{assignment.title}</strong>
@@ -184,7 +203,9 @@ const StudentDashboard = () => {
             ))}
           </ul>
         ) : (
-          <p className="empty-state">No assignments yet.</p>
+          <p className="empty-state">
+            {showOverdueOnly ? 'No overdue assignments. Great job staying on track!' : 'No assignments yet.'}
+          </p>
         )}
       </div>
 
