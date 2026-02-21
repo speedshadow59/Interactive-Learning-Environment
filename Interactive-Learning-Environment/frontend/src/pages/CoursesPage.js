@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../services/apiClient';
 import { useAuthStore } from '../stores/authStore';
@@ -26,14 +26,7 @@ const CoursesPage = () => {
 
   const formatYearList = (years = []) => years.map(formatYearLabel).join(', ');
 
-  useEffect(() => {
-    fetchCourses();
-    if (user?.role === 'student') {
-      fetchEnrolledCourses();
-    }
-  }, [filters, user]);
-
-  const fetchCourses = async () => {
+  const fetchCourses = useCallback(async () => {
     try {
       const params = {};
       if (filters.difficulty) params.difficulty = filters.difficulty;
@@ -46,9 +39,9 @@ const CoursesPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
-  const fetchEnrolledCourses = async () => {
+  const fetchEnrolledCourses = useCallback(async () => {
     try {
       const response = await apiClient.get('/dashboard/student');
       const enrolledIds = new Set(
@@ -58,7 +51,14 @@ const CoursesPage = () => {
     } catch (err) {
       console.error('Failed to fetch enrolled courses:', err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchCourses();
+    if (user?.role === 'student') {
+      fetchEnrolledCourses();
+    }
+  }, [fetchCourses, fetchEnrolledCourses, user]);
 
   const handleEnroll = async (courseId) => {
     setEnrollingId(courseId);

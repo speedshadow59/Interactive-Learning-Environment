@@ -360,7 +360,7 @@ const TeacherDashboard = () => {
   };
 
   const handleInputChange = (event) => {
-    const { name, value, type, checked } = event.target;
+    const { name, value, checked } = event.target;
 
     if (name === 'isPublished') {
       setFormData(prev => ({ ...prev, isPublished: checked }));

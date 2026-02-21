@@ -5,7 +5,6 @@ import '../styles/Analytics.css';
 const StudentAnalytics = ({ courseId }) => {
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -81,19 +80,6 @@ const StudentAnalytics = ({ courseId }) => {
 
   const handleStudentClick = async (studentProgress) => {
     setSelectedStudent(studentProgress);
-    try {
-      const studentId = studentProgress.studentId || studentProgress.student?._id || studentProgress.student;
-      if (!studentId) {
-        return;
-      }
-
-      const analyticsRes = await apiClient.get(
-        `/dashboard/student/${studentId}`
-      );
-      setAnalytics(analyticsRes.data);
-    } catch (err) {
-      console.error('Failed to load analytics:', err);
-    }
   };
 
   if (loading) return <div>Loading student data...</div>;
