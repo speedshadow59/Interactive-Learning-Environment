@@ -3,6 +3,13 @@ const router = express.Router();
 const { authenticate } = require('../middleware/authMiddleware');
 const Progress = require('../models/Progress');
 
+const calculateLevelFromExperience = (experiencePoints) => {
+  const safeExperience = Number.isFinite(Number(experiencePoints))
+    ? Math.max(0, Number(experiencePoints))
+    : 0;
+  return Math.floor(safeExperience / 100) + 1;
+};
+
 // Get student progress for a course
 router.get('/student/:studentId/course/:courseId', authenticate, async (req, res) => {
   try {
@@ -50,7 +57,12 @@ router.put('/student/:studentId/course/:courseId', authenticate, async (req, res
         pointsEarned: pointsEarned || 0
       });
       progress.totalPoints += pointsEarned || 0;
+      progress.experiencePoints += pointsEarned || 0;
     }
+
+    progress.experiencePoints = Math.max(0, progress.experiencePoints || 0);
+    progress.currentLevel = calculateLevelFromExperience(progress.experiencePoints);
+    progress.lastActivityAt = new Date();
 
     await progress.save();
     

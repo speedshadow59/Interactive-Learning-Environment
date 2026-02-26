@@ -100,6 +100,8 @@
 | FR10-FR14 Challenge + block/text coding + execution | ✅ | `frontend/src/components/BlockEditor.js`, `backend/src/routes/challengeRoutes.js`, `backend/src/routes/executeRoutes.js` |
 | FR15-FR18 Progress tracking + points/time | ✅ | `backend/src/models/Progress.js`, `backend/src/models/Submission.js`, `backend/src/routes/progressRoutes.js` |
 | FR19-FR20 Gamification badges/points | ✅ | `backend/src/models/Badge.js`, `backend/src/routes/badgeRoutes.js`, `frontend/src/components/BadgesDisplay.js` |
+| FR21 Leaderboard top performers | ✅ | `GET /dashboard/student` leaderboard payload, `frontend/src/pages/StudentDashboard.js` leaderboard section |
+| FR22 Experience -> level progression | ✅ | `backend/src/routes/submissionRoutes.js`, `backend/src/routes/progressRoutes.js`, `backend/src/routes/dashboardRoutes.js` |
 | FR23 Teacher analytics dashboard | ✅ | `GET /dashboard/teacher`, `GET /dashboard/teacher/analytics`, `frontend/src/pages/TeacherDashboard.js` |
 | FR24 Progress report export | ✅ | `GET /dashboard/teacher/export.csv`, Teacher dashboard Export button |
 | FR25 Teacher feedback on submissions | ✅ | `PATCH /submissions/:id/feedback`, `GET /submissions/course/:courseId` in `backend/src/routes/submissionRoutes.js` |
@@ -113,6 +115,4 @@
 
 ### Remaining Priority Items
 
-- FR5 Teacher roster management UI can be expanded with class grouping views and filters.
-- FR21 Leaderboard remains optional in current AT2 scope and can be added as stretch.
 - Formal validation evidence still required: user testing rounds, accessibility audit output, and load/security testing reports.

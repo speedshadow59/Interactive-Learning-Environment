@@ -222,11 +222,11 @@ Please ensure code follows the project standards:
 ### 🔄 In Progress / To Refine
 
 **Teacher Features (Objective 3)**
-- ⏳ Assignment system (set tasks, deadlines)
-- ⏳ Detailed progress analytics
-- ⏳ Class management interface
-- ⏳ Export student data (CSV/PDF)
-- ⏳ Peer review functionality
+- ✅ Assignment system (set tasks, deadlines)
+- ✅ Detailed progress analytics
+- ✅ Class management interface with roster filtering/search and at-risk indicators
+- ✅ Export student data (CSV)
+- ✅ Peer review workflow with mark + feedback updates
 
 **Testing & Validation**
 - ⏳ Full test suite execution
@@ -244,7 +244,7 @@ Please ensure code follows the project standards:
 
 - Offline mode with local caching
 - Google Classroom / MS Teams integration
-- Leaderboards and tournaments
+- Tournaments and seasonal competitions
 - AI-powered hint generation
 - Mobile app (React Native)
 - Video lessons and tutorials

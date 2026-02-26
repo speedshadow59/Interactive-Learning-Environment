@@ -20,6 +20,13 @@ const parseBoolean = (value) => {
   return ['true', '1', 'yes', 'on'].includes(value.toLowerCase());
 };
 
+const calculateLevelFromExperience = (experiencePoints) => {
+  const safeExperience = Number.isFinite(Number(experiencePoints))
+    ? Math.max(0, Number(experiencePoints))
+    : 0;
+  return Math.floor(safeExperience / 100) + 1;
+};
+
 const buildTeacherRoster = async (teacherId, role, filters = {}) => {
   const baseCourseFilter = isTeacherOrAdmin(role) ? {} : { instructor: teacherId };
   const allCourses = await Course.find(baseCourseFilter, 'title');
@@ -534,6 +541,45 @@ router.get('/student', authenticate, async (req, res) => {
       progressCourses.map(course => [course._id.toString(), course.title])
     );
 
+    const leaderboardRows = await Progress.aggregate([
+      {
+        $group: {
+          _id: '$student',
+          totalPoints: { $sum: '$totalPoints' },
+          totalExperience: { $sum: '$experiencePoints' },
+          coursesTracked: { $sum: 1 },
+        },
+      },
+      { $sort: { totalPoints: -1 } },
+    ]);
+
+    const rankedIds = leaderboardRows.map((row) => row._id);
+    const rankedUsers = rankedIds.length
+      ? await User.find({ _id: { $in: rankedIds } }, 'firstName lastName')
+      : [];
+
+    const rankedUserMap = new Map(
+      rankedUsers.map((student) => [student._id.toString(), student])
+    );
+
+    const leaderboard = leaderboardRows.slice(0, 10).map((row, index) => {
+      const student = rankedUserMap.get(row._id.toString());
+      return {
+        rank: index + 1,
+        studentId: row._id,
+        name: student ? `${student.firstName} ${student.lastName}` : 'Student',
+        totalPoints: row.totalPoints || 0,
+        coursesTracked: row.coursesTracked || 0,
+        level: calculateLevelFromExperience(row.totalExperience || 0),
+      };
+    });
+
+    const studentLeaderboardIndex = leaderboardRows.findIndex(
+      (row) => row._id.toString() === req.user.userId
+    );
+
+    const totalExperience = progressData.reduce((sum, p) => sum + (p.experiencePoints || 0), 0);
+
     const dashboardData = {
       user: user.toJSON(),
       enrolledCourses: enrolledCourses.map(c => ({
@@ -541,13 +587,17 @@ router.get('/student', authenticate, async (req, res) => {
         title: c.title
       })),
       totalPoints: progressData.reduce((sum, p) => sum + p.totalPoints, 0),
+      totalExperience,
+      currentLevel: calculateLevelFromExperience(totalExperience),
       progressByCourse: progressData.map(p => ({
         courseId: p.course,
         courseTitle: progressCourseMap.get(p.course.toString()) || 'Course',
         completedChallenges: p.completedChallenges.length,
         totalPoints: p.totalPoints
       })),
-      assignments: assignmentSummary
+      assignments: assignmentSummary,
+      leaderboard,
+      myLeaderboardRank: studentLeaderboardIndex >= 0 ? studentLeaderboardIndex + 1 : null,
     };
 
     res.json(dashboardData);

@@ -8,6 +8,13 @@ const Progress = require('../models/Progress');
 
 const isTeacherOrAdmin = (role) => role === 'teacher' || role === 'admin';
 
+const calculateLevelFromExperience = (experiencePoints) => {
+  const safeExperience = Number.isFinite(Number(experiencePoints))
+    ? Math.max(0, Number(experiencePoints))
+    : 0;
+  return Math.floor(safeExperience / 100) + 1;
+};
+
 const awardProgressBadges = async (progress) => {
   const newBadges = [];
 
@@ -195,12 +202,16 @@ router.patch('/:id/mark', authenticate, async (req, res) => {
           pointsEarned: awardedPoints,
         });
         progress.totalPoints += awardedPoints;
+        progress.experiencePoints += awardedPoints;
       } else {
         const previousPoints = progress.completedChallenges[existingIndex].pointsEarned || 0;
         progress.completedChallenges[existingIndex].completedAt = submission.completedAt || new Date();
         progress.completedChallenges[existingIndex].pointsEarned = awardedPoints;
         progress.totalPoints += awardedPoints - previousPoints;
+        progress.experiencePoints += awardedPoints - previousPoints;
       }
+      progress.experiencePoints = Math.max(0, progress.experiencePoints || 0);
+      progress.currentLevel = calculateLevelFromExperience(progress.experiencePoints);
       progress.lastActivityAt = new Date();
       const newBadges = await awardProgressBadges(progress);
       await progress.save();
@@ -217,8 +228,10 @@ router.patch('/:id/mark', authenticate, async (req, res) => {
       const removedPoints = progress.completedChallenges[existingIndex].pointsEarned || 0;
       progress.completedChallenges.splice(existingIndex, 1);
       progress.totalPoints = Math.max(0, progress.totalPoints - removedPoints);
+      progress.experiencePoints = Math.max(0, (progress.experiencePoints || 0) - removedPoints);
     }
 
+    progress.currentLevel = calculateLevelFromExperience(progress.experiencePoints);
     progress.lastActivityAt = new Date();
     await progress.save();
 

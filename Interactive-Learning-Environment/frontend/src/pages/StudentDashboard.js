@@ -11,7 +11,6 @@ const StudentDashboard = () => {
   const [enrollError, setEnrollError] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const yearGroups = Array.from({ length: 13 }, (_, index) => index + 1);
   const formatYearLabel = (year) => {
     if (year <= 6) return `Year ${year} (Primary)`;
     if (year <= 11) return `Year ${year} (Secondary)`;
@@ -144,17 +143,41 @@ const StudentDashboard = () => {
           <p className="stat-value">{dashboardData?.enrolledCourses?.length || 0}</p>
         </div>
         <div className="stat-card">
-          <h3>Recommended Year Groups</h3>
+          <h3>Current Level</h3>
           <p className="stat-value">
-            {dashboardData?.user?.grade
-              ? formatYearLabel(dashboardData.user.grade)
-              : `Years ${yearGroups[0]}-${yearGroups[yearGroups.length - 1]} (Primary/Secondary)`}
+            Lv {dashboardData?.currentLevel || 1}
           </p>
         </div>
         <div className="stat-card">
           <h3>Overdue Assignments</h3>
           <p className="stat-value">{assignmentCounts.overdue}</p>
         </div>
+      </div>
+
+      <div className="section-card">
+        <div className="section-header">
+          <h2>Leaderboard</h2>
+          <span className="section-subtitle">
+            {dashboardData?.myLeaderboardRank
+              ? `Your rank: #${dashboardData.myLeaderboardRank}`
+              : 'Complete challenges to appear on the leaderboard'}
+          </span>
+        </div>
+        {(dashboardData?.leaderboard || []).length > 0 ? (
+          <ul className="progress-list">
+            {dashboardData.leaderboard.map((entry) => (
+              <li key={entry.studentId}>
+                <div>
+                  <strong>#{entry.rank} {entry.name}</strong>
+                  <div>Level {entry.level} • {entry.coursesTracked} tracked course(s)</div>
+                </div>
+                <span>{entry.totalPoints} points</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="empty-state">Leaderboard is empty right now.</p>
+        )}
       </div>
 
       <div className="section-card">
