@@ -374,6 +374,10 @@
   font-weight: 600;
 }
 
+.toggle-label--offset {
+  margin-top: 24px;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;

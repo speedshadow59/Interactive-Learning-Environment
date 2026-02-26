@@ -6,7 +6,7 @@ import '../styles/Dashboard.css';
 const StudentDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [availableCourses, setAvailableCourses] = useState([]);
-  const [showOverdueOnly, setShowOverdueOnly] = useState(false);
+  const [assignmentFilter, setAssignmentFilter] = useState('all');
   const [enrollingId, setEnrollingId] = useState(null);
   const [enrollError, setEnrollError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -80,10 +80,42 @@ const StudentDashboard = () => {
       : false
   );
   const allAssignments = dashboardData?.assignments || [];
-  const overdueAssignments = allAssignments.filter(
-    (assignment) => assignment.status === 'overdue'
+  const assignmentCounts = allAssignments.reduce(
+    (acc, assignment) => {
+      const status = assignment.status || 'pending';
+      acc.all += 1;
+      if (status === 'overdue') acc.overdue += 1;
+      if (status === 'pending') acc.pending += 1;
+      if (status === 'completed' || status === 'completed_late') acc.completed += 1;
+      return acc;
+    },
+    { all: 0, overdue: 0, pending: 0, completed: 0 }
   );
-  const visibleAssignments = showOverdueOnly ? overdueAssignments : allAssignments;
+
+  const filteredAssignments = allAssignments.filter((assignment) => {
+    if (assignmentFilter === 'all') return true;
+    if (assignmentFilter === 'completed') {
+      return assignment.status === 'completed' || assignment.status === 'completed_late';
+    }
+    return (assignment.status || 'pending') === assignmentFilter;
+  });
+
+  const visibleAssignments = filteredAssignments
+    .slice()
+    .sort((a, b) => {
+      const statusOrder = (status) => {
+        if (status === 'overdue') return 0;
+        if (status === 'pending') return 1;
+        if (status === 'completed_late') return 2;
+        if (status === 'completed') return 3;
+        return 4;
+      };
+
+      const statusDiff = statusOrder(a.status) - statusOrder(b.status);
+      if (statusDiff !== 0) return statusDiff;
+
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    });
 
   return (
     <div className="dashboard student-dashboard">
@@ -121,7 +153,7 @@ const StudentDashboard = () => {
         </div>
         <div className="stat-card">
           <h3>Overdue Assignments</h3>
-          <p className="stat-value">{overdueAssignments.length}</p>
+          <p className="stat-value">{assignmentCounts.overdue}</p>
         </div>
       </div>
 
@@ -168,15 +200,18 @@ const StudentDashboard = () => {
       <div className="section-card">
         <div className="section-header">
           <h2>Assigned Work</h2>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div className="section-header-controls">
             <span className="section-subtitle">Track deadlines and completion status</span>
-            <button
-              className="btn btn-secondary"
-              onClick={() => setShowOverdueOnly(prev => !prev)}
-              type="button"
+            <select
+              className="filter-select"
+              value={assignmentFilter}
+              onChange={(event) => setAssignmentFilter(event.target.value)}
             >
-              {showOverdueOnly ? 'Show All' : 'Overdue Only'}
-            </button>
+              <option value="all">All ({assignmentCounts.all})</option>
+              <option value="overdue">Overdue ({assignmentCounts.overdue})</option>
+              <option value="pending">Pending ({assignmentCounts.pending})</option>
+              <option value="completed">Completed ({assignmentCounts.completed})</option>
+            </select>
           </div>
         </div>
         {visibleAssignments.length > 0 ? (
@@ -204,7 +239,9 @@ const StudentDashboard = () => {
           </ul>
         ) : (
           <p className="empty-state">
-            {showOverdueOnly ? 'No overdue assignments. Great job staying on track!' : 'No assignments yet.'}
+            {assignmentFilter === 'all'
+              ? 'No assignments yet.'
+              : `No assignments in ${assignmentFilter.replace('_', ' ')} state.`}
           </p>
         )}
       </div>

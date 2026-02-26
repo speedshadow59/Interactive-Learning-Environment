@@ -28,6 +28,7 @@ const TeacherDashboard = () => {
   const [rosterFilterCourseId, setRosterFilterCourseId] = useState('');
   const [rosterFilterYearGroup, setRosterFilterYearGroup] = useState('');
   const [rosterRiskOnly, setRosterRiskOnly] = useState(false);
+  const [rosterSearch, setRosterSearch] = useState('');
   const [assignmentFilter, setAssignmentFilter] = useState('all');
   const [rosterLoading, setRosterLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -169,6 +170,24 @@ const TeacherDashboard = () => {
     if (assignmentFilter === 'active') return !(assignment.isOverdue && assignment.pendingCount > 0);
     return true;
   });
+
+  const roster = dashboardData?.roster || [];
+  const normalizedRosterSearch = rosterSearch.trim().toLowerCase();
+  const filteredRoster = normalizedRosterSearch
+    ? roster.filter((student) => {
+        const haystack = `${student.name || ''} ${student.email || ''} ${student.grade || ''}`.toLowerCase();
+        return haystack.includes(normalizedRosterSearch);
+      })
+    : roster;
+
+  const rosterRiskCounts = filteredRoster.reduce(
+    (acc, student) => {
+      if (student.isAtRisk) acc.atRisk += 1;
+      else acc.onTrack += 1;
+      return acc;
+    },
+    { atRisk: 0, onTrack: 0 }
+  );
 
   const loadCourseSubmissions = async (courseId) => {
     if (!courseId) {
@@ -809,7 +828,7 @@ const TeacherDashboard = () => {
           </div>
 
           <div className="form-group form-toggle">
-            <label className="toggle-label" style={{ marginTop: '24px' }}>
+            <label className="toggle-label toggle-label--offset">
               <input
                 type="checkbox"
                 checked={rosterRiskOnly}
@@ -817,6 +836,17 @@ const TeacherDashboard = () => {
               />
               <span>At-risk only</span>
             </label>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="rosterSearch">Search Student</label>
+            <input
+              id="rosterSearch"
+              type="text"
+              value={rosterSearch}
+              onChange={(event) => setRosterSearch(event.target.value)}
+              placeholder="Name, email, or year"
+            />
           </div>
         </div>
 
@@ -842,19 +872,23 @@ const TeacherDashboard = () => {
         <ul className="progress-list progress-list--compact">
           <li>
             <span>Visible Students</span>
-            <strong>{dashboardData?.rosterSummary?.filteredStudents || 0}</strong>
+            <strong>{filteredRoster.length}</strong>
           </li>
           <li>
             <span>At-risk Students</span>
-            <strong>{dashboardData?.rosterSummary?.atRiskStudents || 0}</strong>
+            <strong>{rosterRiskCounts.atRisk}</strong>
+          </li>
+          <li>
+            <span>On-track Students</span>
+            <strong>{rosterRiskCounts.onTrack}</strong>
           </li>
         </ul>
 
         {rosterLoading ? (
           <p className="empty-state">Loading roster...</p>
-        ) : (dashboardData?.roster || []).length > 0 ? (
+        ) : filteredRoster.length > 0 ? (
           <ul className="progress-list">
-            {dashboardData.roster.map((student) => (
+            {filteredRoster.map((student) => (
               <li key={student.id}>
                 <div>
                   <strong>{student.name}</strong>
