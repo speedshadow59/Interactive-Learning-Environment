@@ -80,9 +80,9 @@ const ProfilePage = () => {
 
   return (
     <div className="auth-container">
-      <div className="auth-card" style={{ maxWidth: '700px' }}>
+      <div className="auth-card profile-card">
         <h1>My Profile</h1>
-        <p style={{ color: '#607080', marginBottom: '30px', textAlign: 'center' }}>
+        <p className="profile-subtitle">
           Update your personal information
         </p>
 
@@ -125,9 +125,9 @@ const ProfilePage = () => {
               onChange={handleChange}
               required
               disabled
-              style={{ backgroundColor: '#f0f0f0', cursor: 'not-allowed' }}
+              className="input-disabled"
             />
-            <small style={{ color: '#607080', fontSize: '12px' }}>
+            <small className="input-note">
               Email cannot be changed
             </small>
           </div>
@@ -172,23 +172,13 @@ const ProfilePage = () => {
               onChange={handleChange}
               rows="4"
               placeholder="Tell us about yourself..."
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '1px solid #e0e0e0',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontFamily: 'inherit',
-                resize: 'vertical'
-              }}
             />
           </div>
 
           <button
             type="submit"
-            className="btn btn-primary"
+            className="btn btn-primary profile-submit-btn"
             disabled={saving}
-            style={{ width: '100%', marginTop: '20px' }}
           >
             {saving ? 'Saving...' : 'Save Changes'}
           </button>

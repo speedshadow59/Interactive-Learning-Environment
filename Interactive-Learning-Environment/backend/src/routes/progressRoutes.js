@@ -2,13 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middleware/authMiddleware');
 const Progress = require('../models/Progress');
-
-const calculateLevelFromExperience = (experiencePoints) => {
-  const safeExperience = Number.isFinite(Number(experiencePoints))
-    ? Math.max(0, Number(experiencePoints))
-    : 0;
-  return Math.floor(safeExperience / 100) + 1;
-};
+const { calculateLevelFromExperience } = require('../utils/progression');
 
 // Get student progress for a course
 router.get('/student/:studentId/course/:courseId', authenticate, async (req, res) => {

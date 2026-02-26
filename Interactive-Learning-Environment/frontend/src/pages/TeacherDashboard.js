@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../services/apiClient';
 import '../styles/Dashboard.css';
 
@@ -149,44 +149,60 @@ const TeacherDashboard = () => {
 
   const selectedCourseOption = assignmentOptions.find((course) => course.id === assignmentForm.courseId);
 
-  const assignmentCounts = assignmentData.reduce(
-    (acc, assignment) => {
-      const hasMissing = (assignment.missingCount || 0) > 0;
-      const isOverdue = Boolean(assignment.isOverdue && assignment.pendingCount > 0);
+  const assignmentCounts = useMemo(
+    () => assignmentData.reduce(
+      (acc, assignment) => {
+        const hasMissing = (assignment.missingCount || 0) > 0;
+        const isOverdue = Boolean(assignment.isOverdue && assignment.pendingCount > 0);
 
-      acc.all += 1;
-      if (isOverdue) acc.overdue += 1;
-      if (hasMissing) acc.missing += 1;
-      if (!isOverdue) acc.active += 1;
-      return acc;
-    },
-    { all: 0, overdue: 0, missing: 0, active: 0 }
+        acc.all += 1;
+        if (isOverdue) acc.overdue += 1;
+        if (hasMissing) acc.missing += 1;
+        if (!isOverdue) acc.active += 1;
+        return acc;
+      },
+      { all: 0, overdue: 0, missing: 0, active: 0 }
+    ),
+    [assignmentData]
   );
 
-  const filteredAssignments = assignmentData.filter((assignment) => {
-    if (assignmentFilter === 'all') return true;
-    if (assignmentFilter === 'overdue') return Boolean(assignment.isOverdue && assignment.pendingCount > 0);
-    if (assignmentFilter === 'missing') return (assignment.missingCount || 0) > 0;
-    if (assignmentFilter === 'active') return !(assignment.isOverdue && assignment.pendingCount > 0);
-    return true;
-  });
+  const filteredAssignments = useMemo(
+    () => assignmentData.filter((assignment) => {
+      if (assignmentFilter === 'all') return true;
+      if (assignmentFilter === 'overdue') return Boolean(assignment.isOverdue && assignment.pendingCount > 0);
+      if (assignmentFilter === 'missing') return (assignment.missingCount || 0) > 0;
+      if (assignmentFilter === 'active') return !(assignment.isOverdue && assignment.pendingCount > 0);
+      return true;
+    }),
+    [assignmentData, assignmentFilter]
+  );
 
-  const roster = dashboardData?.roster || [];
+  const roster = useMemo(
+    () => dashboardData?.roster || [],
+    [dashboardData?.roster]
+  );
   const normalizedRosterSearch = rosterSearch.trim().toLowerCase();
-  const filteredRoster = normalizedRosterSearch
-    ? roster.filter((student) => {
-        const haystack = `${student.name || ''} ${student.email || ''} ${student.grade || ''}`.toLowerCase();
-        return haystack.includes(normalizedRosterSearch);
-      })
-    : roster;
 
-  const rosterRiskCounts = filteredRoster.reduce(
-    (acc, student) => {
-      if (student.isAtRisk) acc.atRisk += 1;
-      else acc.onTrack += 1;
-      return acc;
-    },
-    { atRisk: 0, onTrack: 0 }
+  const filteredRoster = useMemo(
+    () => (normalizedRosterSearch
+      ? roster.filter((student) => {
+          const haystack = `${student.name || ''} ${student.email || ''} ${student.grade || ''}`.toLowerCase();
+          return haystack.includes(normalizedRosterSearch);
+        })
+      : roster),
+    [normalizedRosterSearch, roster]
+  );
+
+  const rosterRiskCounts = useMemo(
+    () => filteredRoster.reduce(
+      (acc, student) => {
+        if (student.isAtRisk) acc.atRisk += 1;
+        else acc.onTrack += 1;
+        return acc;
+      },
+      { atRisk: 0, onTrack: 0 }
+    ),
+    [filteredRoster]
   );
 
   const loadCourseSubmissions = async (courseId) => {
@@ -250,21 +266,27 @@ const TeacherDashboard = () => {
     }));
   };
 
-  const filteredReviewSubmissions = reviewSubmissions.filter((submission) => {
-    if (reviewFilter === 'all') return true;
-    return (submission.result || 'pending') === reviewFilter;
-  });
+  const filteredReviewSubmissions = useMemo(
+    () => reviewSubmissions.filter((submission) => {
+      if (reviewFilter === 'all') return true;
+      return (submission.result || 'pending') === reviewFilter;
+    }),
+    [reviewSubmissions, reviewFilter]
+  );
 
-  const reviewCounts = reviewSubmissions.reduce(
-    (acc, submission) => {
-      const status = submission.result || 'pending';
-      if (status === 'passed') acc.passed += 1;
-      if (status === 'failed') acc.failed += 1;
-      if (status === 'pending') acc.pending += 1;
-      acc.all += 1;
-      return acc;
-    },
-    { all: 0, passed: 0, failed: 0, pending: 0 }
+  const reviewCounts = useMemo(
+    () => reviewSubmissions.reduce(
+      (acc, submission) => {
+        const status = submission.result || 'pending';
+        if (status === 'passed') acc.passed += 1;
+        if (status === 'failed') acc.failed += 1;
+        if (status === 'pending') acc.pending += 1;
+        acc.all += 1;
+        return acc;
+      },
+      { all: 0, passed: 0, failed: 0, pending: 0 }
+    ),
+    [reviewSubmissions]
   );
 
   const handleSaveFeedback = async (submissionId) => {
@@ -971,7 +993,7 @@ const TeacherDashboard = () => {
                     <div>
                       Submitted: {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString() : 'N/A'}
                     </div>
-                    <div className="form-row" style={{ marginTop: '8px' }}>
+                    <div className="form-row form-row-tight-top">
                       <div className="form-group">
                         <label htmlFor={`result-${submission._id}`}>Mark Result</label>
                         <select
@@ -995,7 +1017,7 @@ const TeacherDashboard = () => {
                         />
                       </div>
                     </div>
-                    <div className="form-group" style={{ marginTop: '8px' }}>
+                    <div className="form-group form-group-tight-top">
                       <label htmlFor={`feedback-${submission._id}`}>Feedback</label>
                       <textarea
                         id={`feedback-${submission._id}`}
@@ -1007,10 +1029,10 @@ const TeacherDashboard = () => {
                   </div>
                   <div>
                     <button
-                      className="btn btn-secondary"
+                      className="btn btn-secondary btn-spaced-bottom"
                       onClick={() => handleSaveMark(submission._id)}
                       disabled={savingMarkId === submission._id}
-                      style={{ marginBottom: '8px' }}
+                      type="button"
                     >
                       {savingMarkId === submission._id ? 'Saving Mark...' : 'Save Mark'}
                     </button>

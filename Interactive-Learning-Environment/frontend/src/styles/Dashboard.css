@@ -291,6 +291,34 @@
   border: 1px solid var(--border);
 }
 
+.filters-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.filters-group {
+  flex: 1;
+  min-width: 200px;
+  margin-bottom: 0;
+}
+
+.filters-error {
+  margin-bottom: 20px;
+}
+
+.courses-empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+
+.course-meta-spaced {
+  margin-bottom: 16px;
+}
+
 .badge-muted {
   background: rgba(89, 101, 127, 0.18);
   color: #ffffff;
@@ -396,6 +424,18 @@
   flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
+}
+
+.form-row-tight-top {
+  margin-top: 8px;
+}
+
+.form-group-tight-top {
+  margin-top: 8px;
+}
+
+.btn-spaced-bottom {
+  margin-bottom: 8px;
 }
 
 .progress-list li:last-child {

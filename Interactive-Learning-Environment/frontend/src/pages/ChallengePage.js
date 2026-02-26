@@ -176,9 +176,9 @@ const ChallengePage = () => {
     <div className="challenge-page">
       <div className="challenge-instructions">
         <button
-          className="btn btn-secondary"
+          className="btn btn-secondary challenge-back-btn"
           onClick={() => navigate(`/courses/${challenge.course}`)}
-          style={{ marginBottom: '20px' }}
+          type="button"
         >
           ← Back to Course
         </button>
@@ -238,9 +238,9 @@ const ChallengePage = () => {
             <h2>
               Hints
               <button
-                className="btn btn-secondary"
+                className="btn btn-secondary hint-toggle-btn"
                 onClick={() => setShowHints(!showHints)}
-                style={{ marginLeft: '10px', fontSize: '14px', padding: '5px 10px' }}
+                type="button"
               >
                 {showHints ? 'Hide' : 'Show'}
               </button>

@@ -122,6 +122,31 @@
   font-size: 14px;
 }
 
+.profile-card {
+  max-width: 700px;
+}
+
+.profile-subtitle {
+  color: #607080;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.input-disabled {
+  background-color: #f0f0f0;
+  cursor: not-allowed;
+}
+
+.input-note {
+  color: #607080;
+  font-size: 12px;
+}
+
+.profile-submit-btn {
+  width: 100%;
+  margin-top: 20px;
+}
+
 .auth-link {
   text-align: center;
   color: #666;

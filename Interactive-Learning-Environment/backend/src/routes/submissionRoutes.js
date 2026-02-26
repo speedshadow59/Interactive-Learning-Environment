@@ -5,15 +5,9 @@ const Submission = require('../models/Submission');
 const Course = require('../models/Course');
 const Challenge = require('../models/Challenge');
 const Progress = require('../models/Progress');
+const { calculateLevelFromExperience } = require('../utils/progression');
 
 const isTeacherOrAdmin = (role) => role === 'teacher' || role === 'admin';
-
-const calculateLevelFromExperience = (experiencePoints) => {
-  const safeExperience = Number.isFinite(Number(experiencePoints))
-    ? Math.max(0, Number(experiencePoints))
-    : 0;
-  return Math.floor(safeExperience / 100) + 1;
-};
 
 const awardProgressBadges = async (progress) => {
   const newBadges = [];

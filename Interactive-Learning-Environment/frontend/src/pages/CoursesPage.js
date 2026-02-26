@@ -91,8 +91,8 @@ const CoursesPage = () => {
       </div>
 
       <div className="filters-section">
-        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div className="form-group" style={{ flex: '1', minWidth: '200px', marginBottom: 0 }}>
+        <div className="filters-row">
+          <div className="form-group filters-group">
             <label htmlFor="difficulty">Difficulty</label>
             <select
               id="difficulty"
@@ -107,7 +107,7 @@ const CoursesPage = () => {
             </select>
           </div>
 
-          <div className="form-group" style={{ flex: '1', minWidth: '200px', marginBottom: 0 }}>
+          <div className="form-group filters-group">
             <label htmlFor="targetGrade">Year Group</label>
             <select
               id="targetGrade"
@@ -128,7 +128,7 @@ const CoursesPage = () => {
             <button
               className="btn"
               onClick={() => setFilters({ difficulty: '', targetGrade: '' })}
-              style={{ padding: '10px 20px' }}
+              type="button"
             >
               Clear Filters
             </button>
@@ -136,16 +136,11 @@ const CoursesPage = () => {
         </div>
       </div>
 
-      {error && <div className="error-message" style={{ marginBottom: '20px' }}>{error}</div>}
+      {error && <div className="error-message filters-error">{error}</div>}
 
       <div className="courses-grid">
         {courses.length === 0 ? (
-          <div style={{
-            gridColumn: '1 / -1',
-            textAlign: 'center',
-            padding: '60px 20px',
-            color: '#607080'
-          }}>
+          <div className="courses-empty-state">
             <h3>No courses found</h3>
             <p>Try adjusting your filters</p>
           </div>
@@ -162,7 +157,7 @@ const CoursesPage = () => {
               >
                 <h3>{course.title}</h3>
                 <p>{course.description}</p>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                <div className="course-meta course-meta-spaced">
                   <span className="badge">{course.difficulty}</span>
                   <span className="badge">
                     {formatYearList(course.targetGrades)}

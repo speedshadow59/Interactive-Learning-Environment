@@ -97,14 +97,14 @@ const CoursePage = () => {
             className="btn btn-primary"
             onClick={handleEnroll}
             disabled={enrolling}
-            style={{ marginTop: '20px' }}
+            type="button"
           >
             {enrolling ? 'Enrolling...' : 'Enroll in Course'}
           </button>
         )}
       </div>
 
-      {error && <div className="error" style={{ marginBottom: '20px' }}>{error}</div>}
+      {error && <div className="error course-error-message">{error}</div>}
 
       <div className="course-nav">
         <button
@@ -132,7 +132,7 @@ const CoursePage = () => {
       {activeTab === 'challenges' && (
         <div className="challenges-list">
           {challenges.length === 0 ? (
-            <p style={{ color: '#607080' }}>No challenges available yet.</p>
+            <p className="challenge-empty">No challenges available yet.</p>
           ) : (
             challenges.map((challenge, index) => (
               <div

@@ -6,6 +6,7 @@ const Course = require('../models/Course');
 const Submission = require('../models/Submission');
 const Progress = require('../models/Progress');
 const Assignment = require('../models/Assignment');
+const { calculateLevelFromExperience } = require('../utils/progression');
 
 const isTeacherOrAdmin = (role) => role === 'teacher' || role === 'admin';
 
@@ -18,13 +19,6 @@ const parseBoolean = (value) => {
   if (typeof value === 'boolean') return value;
   if (typeof value !== 'string') return false;
   return ['true', '1', 'yes', 'on'].includes(value.toLowerCase());
-};
-
-const calculateLevelFromExperience = (experiencePoints) => {
-  const safeExperience = Number.isFinite(Number(experiencePoints))
-    ? Math.max(0, Number(experiencePoints))
-    : 0;
-  return Math.floor(safeExperience / 100) + 1;
 };
 
 const buildTeacherRoster = async (teacherId, role, filters = {}) => {

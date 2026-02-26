@@ -1,7 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { apiClient } from '../services/apiClient';
 import BadgesDisplay from '../components/BadgesDisplay';
 import '../styles/Dashboard.css';
+
+const assignmentStatusOrder = (status) => {
+  if (status === 'overdue') return 0;
+  if (status === 'pending') return 1;
+  if (status === 'completed_late') return 2;
+  if (status === 'completed') return 3;
+  return 4;
+};
+
+const getAssignmentStatusLabel = (status) => {
+  if (status === 'completed') return 'Completed';
+  if (status === 'completed_late') return 'Completed Late';
+  if (status === 'overdue') return 'Overdue';
+  return 'Pending';
+};
 
 const StudentDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -63,58 +78,67 @@ const StudentDashboard = () => {
     }
   };
 
+  const enrolledCourseIds = useMemo(
+    () => new Set((dashboardData?.enrolledCourses || []).map((course) => course.id?.toString())),
+    [dashboardData?.enrolledCourses]
+  );
+
+  const filteredAvailableCourses = useMemo(
+    () => availableCourses.filter((course) => !enrolledCourseIds.has(course._id.toString())),
+    [availableCourses, enrolledCourseIds]
+  );
+
+  const studentGrade = dashboardData?.user?.grade;
+  const recommendedCourses = useMemo(
+    () => filteredAvailableCourses.filter((course) => (
+      studentGrade && Array.isArray(course.targetGrades)
+        ? course.targetGrades.includes(studentGrade)
+        : false
+    )),
+    [filteredAvailableCourses, studentGrade]
+  );
+
+  const allAssignments = useMemo(
+    () => dashboardData?.assignments || [],
+    [dashboardData?.assignments]
+  );
+
+  const assignmentCounts = useMemo(
+    () => allAssignments.reduce(
+      (acc, assignment) => {
+        const status = assignment.status || 'pending';
+        acc.all += 1;
+        if (status === 'overdue') acc.overdue += 1;
+        if (status === 'pending') acc.pending += 1;
+        if (status === 'completed' || status === 'completed_late') acc.completed += 1;
+        return acc;
+      },
+      { all: 0, overdue: 0, pending: 0, completed: 0 }
+    ),
+    [allAssignments]
+  );
+
+  const visibleAssignments = useMemo(() => {
+    const filteredAssignments = allAssignments.filter((assignment) => {
+      if (assignmentFilter === 'all') return true;
+      if (assignmentFilter === 'completed') {
+        return assignment.status === 'completed' || assignment.status === 'completed_late';
+      }
+      return (assignment.status || 'pending') === assignmentFilter;
+    });
+
+    return filteredAssignments
+      .slice()
+      .sort((a, b) => {
+        const statusDiff = assignmentStatusOrder(a.status) - assignmentStatusOrder(b.status);
+        if (statusDiff !== 0) return statusDiff;
+
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      });
+  }, [allAssignments, assignmentFilter]);
+
   if (loading) return <div className="loading">Loading dashboard...</div>;
   if (error) return <div className="error">{error}</div>;
-
-  const enrolledCourseIds = new Set(
-    (dashboardData?.enrolledCourses || []).map(course => course.id?.toString())
-  );
-  const filteredAvailableCourses = availableCourses.filter(
-    course => !enrolledCourseIds.has(course._id.toString())
-  );
-  const studentGrade = dashboardData?.user?.grade;
-  const recommendedCourses = filteredAvailableCourses.filter((course) =>
-    studentGrade && Array.isArray(course.targetGrades)
-      ? course.targetGrades.includes(studentGrade)
-      : false
-  );
-  const allAssignments = dashboardData?.assignments || [];
-  const assignmentCounts = allAssignments.reduce(
-    (acc, assignment) => {
-      const status = assignment.status || 'pending';
-      acc.all += 1;
-      if (status === 'overdue') acc.overdue += 1;
-      if (status === 'pending') acc.pending += 1;
-      if (status === 'completed' || status === 'completed_late') acc.completed += 1;
-      return acc;
-    },
-    { all: 0, overdue: 0, pending: 0, completed: 0 }
-  );
-
-  const filteredAssignments = allAssignments.filter((assignment) => {
-    if (assignmentFilter === 'all') return true;
-    if (assignmentFilter === 'completed') {
-      return assignment.status === 'completed' || assignment.status === 'completed_late';
-    }
-    return (assignment.status || 'pending') === assignmentFilter;
-  });
-
-  const visibleAssignments = filteredAssignments
-    .slice()
-    .sort((a, b) => {
-      const statusOrder = (status) => {
-        if (status === 'overdue') return 0;
-        if (status === 'pending') return 1;
-        if (status === 'completed_late') return 2;
-        if (status === 'completed') return 3;
-        return 4;
-      };
-
-      const statusDiff = statusOrder(a.status) - statusOrder(b.status);
-      if (statusDiff !== 0) return statusDiff;
-
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-    });
 
   return (
     <div className="dashboard student-dashboard">
@@ -247,15 +271,7 @@ const StudentDashboard = () => {
                   <div>Due: {new Date(assignment.dueDate).toLocaleString()}</div>
                 </div>
                 <div className="course-meta">
-                  <span className="badge">
-                    {assignment.status === 'completed'
-                      ? 'Completed'
-                      : assignment.status === 'completed_late'
-                        ? 'Completed Late'
-                        : assignment.status === 'overdue'
-                          ? 'Overdue'
-                          : 'Pending'}
-                  </span>
+                  <span className="badge">{getAssignmentStatusLabel(assignment.status)}</span>
                 </div>
               </li>
             ))}
