@@ -45,10 +45,13 @@
   padding: 0;
   margin-top: 10px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: min(360px, calc(100vw - 40px));
 }
 
 .a11y-panel.open .a11y-menu {
-  max-height: 600px;
+  max-height: min(70vh, 620px);
+  overflow-y: auto;
+  overflow-x: hidden;
   transform: translateY(0);
   opacity: 1;
   padding: 20px;
@@ -322,8 +325,11 @@ body.a11y-high-contrast a {
   }
 
   .a11y-menu {
-    max-width: 90vw;
-    width: 90vw;
+    width: calc(100vw - 20px);
+  }
+
+  .a11y-panel.open .a11y-menu {
+    max-height: 75vh;
   }
 
   .a11y-menu h2 {
