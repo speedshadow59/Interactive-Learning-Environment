@@ -85,6 +85,13 @@ body {
   box-shadow: none;
 }
 
+button + button,
+button + .btn,
+.btn + button,
+.btn + .btn {
+  margin-left: 10px;
+}
+
 .loading,
 .error {
   display: flex;

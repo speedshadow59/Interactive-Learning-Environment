@@ -150,11 +150,15 @@
 
 .block-controls {
   display: flex;
-  gap: 4px;
+  gap: 8px;
+}
+
+.block-controls .btn-small + .btn-small {
+  margin-left: 0;
 }
 
 .btn-small {
-  padding: 4px 8px;
+  padding: 5px 9px;
   background: rgba(255, 255, 255, 0.2);
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.4);
@@ -163,6 +167,7 @@
   font-size: 11px;
   font-weight: 600;
   transition: all 0.2s;
+  min-width: 30px;
 }
 
 .btn-small:hover:not(:disabled) {
@@ -247,7 +252,8 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
-  gap: 8px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .block-preview h4 {
@@ -260,23 +266,23 @@
 }
 
 .btn-run {
-  padding: 8px 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #2f5cff 0%, #1f3fbf 100%);
   color: white;
-  border: none;
-  border-radius: 6px;
+  border: 1px solid rgba(20, 46, 133, 0.45);
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   transition: all 0.3s;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-  min-width: 100px;
+  box-shadow: 0 4px 12px rgba(47, 92, 255, 0.28);
+  min-width: 130px;
   white-space: nowrap;
 }
 
 .btn-run:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+  box-shadow: 0 7px 16px rgba(47, 92, 255, 0.4);
 }
 
 .btn-run:disabled {
