@@ -18,7 +18,7 @@ const registerSchema = Joi.object({
 });
 
 const loginSchema = Joi.object({
-  email: Joi.string().email().required(),
+  email: Joi.string().required(),
   password: Joi.string().required()
 });
 
@@ -92,8 +92,11 @@ const login = async (req, res) => {
     }
 
     const { email, password } = value;
+    const identifier = email.trim().toLowerCase();
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({
+      $or: [{ email: identifier }, { username: identifier }]
+    });
     if (!user) {
       return res.status(401).json({
         success: false,
