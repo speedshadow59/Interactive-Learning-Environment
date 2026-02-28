@@ -2,7 +2,14 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 
-// Validation schemas
+/*
+  Auth controller responsibilities:
+  1) validate incoming auth payloads
+  2) create/check users
+  3) issue JWTs used by protected routes
+*/
+
+// Validation schemas keep request checks consistent across auth endpoints.
 const registerSchema = Joi.object({
   username: Joi.string().alphanum().min(3).max(30).required(),
   email: Joi.string().email().required(),
@@ -22,7 +29,7 @@ const loginSchema = Joi.object({
   password: Joi.string().required()
 });
 
-// Register user
+// Register user and return JWT for immediate authenticated session.
 const register = async (req, res) => {
   try {
     const { error, value } = registerSchema.validate(req.body);
@@ -80,7 +87,7 @@ const register = async (req, res) => {
   }
 };
 
-// Login user
+// Login by email OR username, enforce account state checks, then issue JWT.
 const login = async (req, res) => {
   try {
     const { error, value } = loginSchema.validate(req.body);
@@ -160,7 +167,7 @@ const login = async (req, res) => {
   }
 };
 
-// Logout (client-side primarily handles token removal)
+// Logout endpoint for API completeness (token invalidation is client-side in this app).
 const logout = (req, res) => {
   res.json({
     success: true,

@@ -9,13 +9,18 @@ const {
   createRateLimiter,
 } = require('./middleware/errorHandler');
 
+/*
+  Application bootstrap file.
+  Demonstrates middleware order, route registration, and global error handling.
+*/
+
 // Load environment variables
 dotenv.config();
 
 // Initialize express app
 const app = express();
 
-// Middleware - Security & GDPR
+// Middleware - Security & GDPR (applied before routes)
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
@@ -31,7 +36,7 @@ app.use(createRateLimiter(15 * 60 * 1000, 100)); // Rate limit: 100 requests per
 // Connect to database
 connectDB();
 
-// Routes
+// Feature route registration (auth, learning flows, analytics, privacy)
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/courses', require('./routes/courseRoutes'));
@@ -62,7 +67,7 @@ app.use((req, res) => {
   });
 });
 
-// Global error handler (must be last)
+// Global error handler (must be last so all thrown errors are centralized)
 app.use(errorHandler);
 
 // Start server

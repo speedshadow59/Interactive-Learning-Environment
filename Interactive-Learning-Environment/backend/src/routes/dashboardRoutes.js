@@ -8,6 +8,14 @@ const Progress = require('../models/Progress');
 const Assignment = require('../models/Assignment');
 const { calculateLevelFromExperience } = require('../utils/progression');
 
+/*
+  Dashboard routes aggregate student/teacher insights:
+  - teacher analytics + roster risk signals
+  - student dashboard summary + leaderboard
+  - CSV export for reporting
+*/
+
+// Shared authorization helper for analytics/reporting endpoints.
 const isTeacherOrAdmin = (role) => role === 'teacher' || role === 'admin';
 
 const escapeCsv = (value) => {
@@ -21,6 +29,7 @@ const parseBoolean = (value) => {
   return ['true', '1', 'yes', 'on'].includes(value.toLowerCase());
 };
 
+// Builds enriched roster rows (risk, activity, assignment state) for teacher UI filters.
 const buildTeacherRoster = async (teacherId, role, filters = {}) => {
   const baseCourseFilter = isTeacherOrAdmin(role) ? {} : { instructor: teacherId };
   const allCourses = await Course.find(baseCourseFilter, 'title');
@@ -251,6 +260,7 @@ const buildTeacherRoster = async (teacherId, role, filters = {}) => {
   };
 };
 
+// Builds KPI-style analytics cards and course-level distribution data.
 const buildTeacherAnalytics = async (teacherId, role) => {
   const courseFilter = isTeacherOrAdmin(role) ? {} : { instructor: teacherId };
   const courses = await Course.find(courseFilter)

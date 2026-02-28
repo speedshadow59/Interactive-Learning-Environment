@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import '../styles/BlockEditor.css';
 
+/*
+  Visual programming editor used in challenge block mode.
+  Supports palette -> workspace drag/drop, reordering, parameter editing,
+  and generated code execution preview.
+*/
+
 const BlockEditor = ({ initialBlocks, onChange, language = 'javascript' }) => {
   const [blocks, setBlocks] = useState(initialBlocks || []);
   const [selectedBlock, setSelectedBlock] = useState(null);
@@ -32,6 +38,7 @@ const BlockEditor = ({ initialBlocks, onChange, language = 'javascript' }) => {
 
   const currentTemplates = blockTemplates[language] || blockTemplates.javascript;
 
+  // Creates a unique, editable block instance from a template definition.
   const createBlockFromTemplate = (template) => ({
     id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     type: template.id,
@@ -64,6 +71,7 @@ const BlockEditor = ({ initialBlocks, onChange, language = 'javascript' }) => {
     onChange(next);
   };
 
+  // Normalizes user-entered parameter values before code generation.
   const normalizeParamValue = (block, param, value) => {
     if (block.type === 'log' && param === 'text') {
       const trimmed = (value || '').trim();
@@ -136,6 +144,7 @@ const BlockEditor = ({ initialBlocks, onChange, language = 'javascript' }) => {
       .join('\n');
   };
 
+  // Reorders blocks by dragging one existing block over another.
   const reorderBlocks = (fromId, toId) => {
     if (!fromId || !toId || fromId === toId) return;
 
@@ -150,6 +159,7 @@ const BlockEditor = ({ initialBlocks, onChange, language = 'javascript' }) => {
     onChange(next);
   };
 
+  // Distinguishes template drags from in-workspace block drags.
   const parseDragPayload = (event) => {
     const payload = event.dataTransfer?.getData('text/plain');
     if (!payload || typeof payload !== 'string') return null;

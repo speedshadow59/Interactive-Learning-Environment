@@ -7,8 +7,17 @@ const Challenge = require('../models/Challenge');
 const Progress = require('../models/Progress');
 const { calculateLevelFromExperience } = require('../utils/progression');
 
+/*
+  Submission routes manage:
+  - student code submissions
+  - teacher marking/feedback
+  - synchronization of progress, XP/level, and badges
+*/
+
+// Role gate for marking and course-wide submission review.
 const isTeacherOrAdmin = (role) => role === 'teacher' || role === 'admin';
 
+// Badge thresholds derived from cumulative progress milestones.
 const awardProgressBadges = async (progress) => {
   const newBadges = [];
 
@@ -51,7 +60,7 @@ const awardProgressBadges = async (progress) => {
   return newBadges;
 };
 
-// Submit code
+// Student submission endpoint (execution/auto-marking can be layered later).
 router.post('/', authenticate, async (req, res) => {
   try {
     const { challenge, course, code, language, assignmentId } = req.body;
@@ -141,7 +150,7 @@ router.patch('/:id/feedback', authenticate, async (req, res) => {
   }
 });
 
-// Mark submission as passed/failed and sync progress/badges
+// Teacher marking endpoint: updates submission status and recalculates progression.
 router.patch('/:id/mark', authenticate, async (req, res) => {
   try {
     if (!isTeacherOrAdmin(req.user.role)) {

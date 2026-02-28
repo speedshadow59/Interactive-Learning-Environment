@@ -4,6 +4,11 @@ const { authenticate } = require('../middleware/authMiddleware');
 const Progress = require('../models/Progress');
 const { calculateLevelFromExperience } = require('../utils/progression');
 
+/*
+  Progress routes expose read/update operations used after challenge completion.
+  They maintain completed challenge history, points, XP, level, and activity timestamps.
+*/
+
 // Get student progress for a course
 router.get('/student/:studentId/course/:courseId', authenticate, async (req, res) => {
   try {
@@ -22,7 +27,7 @@ router.get('/student/:studentId/course/:courseId', authenticate, async (req, res
   }
 });
 
-// Update student progress
+// Update progress after a successful challenge flow.
 router.put('/student/:studentId/course/:courseId', authenticate, async (req, res) => {
   try {
     const { challengeId, pointsEarned } = req.body;

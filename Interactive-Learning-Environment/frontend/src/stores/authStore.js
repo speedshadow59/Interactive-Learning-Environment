@@ -1,12 +1,20 @@
 import create from 'zustand';
 import { apiClient } from '../services/apiClient';
 
+/*
+  Centralized auth state store:
+  - initializes session from token
+  - handles login/register/logout
+  - exposes user/profile state for role-based UI
+*/
+
 export const useAuthStore = create((set) => ({
   user: null,
   token: null,
   loading: true,
   error: null,
 
+  // Runs once on app start to restore an existing authenticated session.
   initializeAuth: async () => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -32,6 +40,7 @@ export const useAuthStore = create((set) => ({
     }
   },
 
+  // Authenticates via backend and persists JWT for subsequent API calls.
   login: async (email, password) => {
     try {
       set({ error: null });

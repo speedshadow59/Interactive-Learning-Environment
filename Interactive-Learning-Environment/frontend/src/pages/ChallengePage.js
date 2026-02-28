@@ -5,6 +5,14 @@ import { useAuthStore } from '../stores/authStore';
 import BlockEditor from '../components/BlockEditor';
 import '../styles/Challenge.css';
 
+/*
+  Challenge page flow:
+  1) fetch challenge metadata
+  2) let student solve in block mode or code mode
+  3) run code for quick feedback
+  4) submit final solution and update progress
+*/
+
 const ChallengePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -20,6 +28,7 @@ const ChallengePage = () => {
   const [showHints, setShowHints] = useState(false);
   const [useBlockMode, setUseBlockMode] = useState(true);
 
+  // Converts visual blocks into executable source code.
   const buildCodeFromBlocks = () => {
     if (blocks.length === 0) return code;
 
@@ -49,6 +58,7 @@ const ChallengePage = () => {
       .join('\n');
   };
 
+  // Chooses the authoritative code payload depending on current editor mode.
   const buildSubmissionCode = () => {
     if (!useBlockMode || blocks.length === 0) return code;
     return buildCodeFromBlocks();
@@ -86,6 +96,7 @@ const ChallengePage = () => {
     fetchChallenge();
   }, [id]);
 
+  // Persists student submission and syncs progress when challenge is passed.
   const handleSubmit = async () => {
     setSubmitting(true);
     setResult(null);
@@ -130,6 +141,7 @@ const ChallengePage = () => {
     }
   };
 
+  // Executes code without final submission to provide fast iteration feedback.
   const handleRunCode = async () => {
     setSubmitting(true);
     setError('');

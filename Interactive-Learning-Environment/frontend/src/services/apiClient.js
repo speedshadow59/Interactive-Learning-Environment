@@ -1,5 +1,10 @@
 import axios from 'axios';
 
+/*
+  Shared HTTP client for the frontend.
+  Request interceptor injects JWT; response interceptor handles expired sessions.
+*/
+
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 export const apiClient = axios.create({
@@ -9,7 +14,7 @@ export const apiClient = axios.create({
   }
 });
 
-// Add token to requests
+// Attach bearer token to every request after login.
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -18,7 +23,7 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle response errors
+// Redirect to login on unauthorized API calls (except login/register attempts).
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
