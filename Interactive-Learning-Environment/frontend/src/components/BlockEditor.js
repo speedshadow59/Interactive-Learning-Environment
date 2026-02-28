@@ -32,24 +32,36 @@ const BlockEditor = ({ initialBlocks, onChange, language = 'javascript' }) => {
 
   const currentTemplates = blockTemplates[language] || blockTemplates.javascript;
 
+  const createBlockFromTemplate = (template) => ({
+    id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    type: template.id,
+    label: template.label,
+    code: template.code,
+    params: template.params.reduce((acc, param) => {
+      acc[param] = '';
+      return acc;
+    }, {}),
+  });
+
   useEffect(() => {
     setBlocks(initialBlocks || []);
   }, [initialBlocks]);
 
   const addBlock = (template) => {
-    const newBlock = {
-      id: `block-${Date.now()}`,
-      type: template.id,
-      label: template.label,
-      code: template.code,
-      params: template.params.reduce((acc, param) => {
-        acc[param] = '';
-        return acc;
-      }, {})
-    };
+    const newBlock = createBlockFromTemplate(template);
     const newBlocks = [...blocks, newBlock];
     setBlocks(newBlocks);
     onChange(newBlocks);
+  };
+
+  const addBlockAt = (template, targetIndex = blocks.length) => {
+    if (!template) return;
+    const newBlock = createBlockFromTemplate(template);
+    const next = [...blocks];
+    const boundedIndex = Math.max(0, Math.min(targetIndex, next.length));
+    next.splice(boundedIndex, 0, newBlock);
+    setBlocks(next);
+    onChange(next);
   };
 
   const normalizeParamValue = (block, param, value) => {
@@ -138,6 +150,21 @@ const BlockEditor = ({ initialBlocks, onChange, language = 'javascript' }) => {
     onChange(next);
   };
 
+  const parseDragPayload = (event) => {
+    const payload = event.dataTransfer?.getData('text/plain');
+    if (!payload || typeof payload !== 'string') return null;
+
+    if (payload.startsWith('template:')) {
+      return { type: 'template', id: payload.replace('template:', '') };
+    }
+
+    if (payload.startsWith('block:')) {
+      return { type: 'block', id: payload.replace('block:', '') };
+    }
+
+    return null;
+  };
+
   const executeCode = async () => {
     setIsRunning(true);
     setOutput('');
@@ -171,6 +198,11 @@ const BlockEditor = ({ initialBlocks, onChange, language = 'javascript' }) => {
             <button
               key={template.id}
               className="palette-block"
+              draggable
+              onDragStart={(event) => {
+                event.dataTransfer.setData('text/plain', `template:${template.id}`);
+                event.dataTransfer.effectAllowed = 'copy';
+              }}
               onClick={() => addBlock(template)}
             >
               {template.label}
@@ -181,7 +213,24 @@ const BlockEditor = ({ initialBlocks, onChange, language = 'javascript' }) => {
 
       <div className="block-workspace">
         <h4>Workspace</h4>
-        <div className="blocks-container">
+        <div
+          className="blocks-container"
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => {
+            event.preventDefault();
+            const payload = parseDragPayload(event);
+
+            if (!payload) return;
+
+            if (payload.type === 'template') {
+              const template = currentTemplates.find((item) => item.id === payload.id);
+              addBlockAt(template, blocks.length);
+            }
+
+            setDraggingId(null);
+            setDragOverId(null);
+          }}
+        >
           {blocks.length === 0 ? (
             <p className="empty-workspace">Drag blocks here or click to add</p>
           ) : (
@@ -191,7 +240,11 @@ const BlockEditor = ({ initialBlocks, onChange, language = 'javascript' }) => {
                 className={`block ${selectedBlock === block.id ? 'selected' : ''} ${draggingId === block.id ? 'dragging' : ''} ${dragOverId === block.id ? 'drag-over' : ''}`}
                 onClick={() => setSelectedBlock(block.id)}
                 draggable
-                onDragStart={() => setDraggingId(block.id)}
+                onDragStart={(event) => {
+                  event.dataTransfer.setData('text/plain', `block:${block.id}`);
+                  event.dataTransfer.effectAllowed = 'move';
+                  setDraggingId(block.id);
+                }}
                 onDragEnter={(e) => {
                   e.preventDefault();
                   if (draggingId && draggingId !== block.id) {
@@ -201,7 +254,18 @@ const BlockEditor = ({ initialBlocks, onChange, language = 'javascript' }) => {
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault();
-                  reorderBlocks(draggingId, block.id);
+
+                  const payload = parseDragPayload(e);
+                  if (!payload) return;
+
+                  if (payload.type === 'block') {
+                    reorderBlocks(payload.id, block.id);
+                  } else if (payload.type === 'template') {
+                    const template = currentTemplates.find((item) => item.id === payload.id);
+                    const targetIndex = blocks.findIndex((item) => item.id === block.id);
+                    addBlockAt(template, targetIndex >= 0 ? targetIndex : blocks.length);
+                  }
+
                   setDraggingId(null);
                   setDragOverId(null);
                 }}
