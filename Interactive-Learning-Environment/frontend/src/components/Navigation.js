@@ -16,7 +16,8 @@ const Navigation = () => {
     <nav className="navigation">
       <div className="nav-container">
         <Link to="/" className="nav-logo">
-          <span className="logo-icon">🎓</span> ILE
+          <span className="logo-mark">ILE</span>
+          <span className="logo-text">Interactive Learning Environment</span>
         </Link>
         
         <ul className="nav-menu">

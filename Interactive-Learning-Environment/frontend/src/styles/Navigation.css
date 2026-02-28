@@ -22,7 +22,7 @@
 .nav-logo {
   display: flex;
   align-items: center;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 800;
   color: white;
   text-decoration: none;
@@ -30,8 +30,24 @@
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
 }
 
-.logo-icon {
-  font-size: 28px;
+.logo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: rgba(88, 123, 255, 0.35);
+  border: 1px solid rgba(148, 176, 255, 0.45);
+  color: #ffffff;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+
+.logo-text {
+  white-space: nowrap;
+  font-size: 16px;
 }
 
 .nav-menu {
@@ -77,8 +93,19 @@
 }
 
 @media (max-width: 768px) {
+  .nav-container {
+    height: 68px;
+    align-items: flex-start;
+    padding-top: 10px;
+  }
+
+  .logo-text {
+    font-size: 14px;
+  }
+
   .nav-menu {
     gap: 15px;
+    margin-top: 4px;
   }
 
   .nav-link {

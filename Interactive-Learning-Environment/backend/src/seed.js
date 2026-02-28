@@ -124,14 +124,47 @@ async function seed() {
       enrolledStudents: [student1._id]
     });
 
-    teacher1.teachingCourses = [course1._id, course3._id];
-    teacher2.teachingCourses = [course2._id];
+    const course4 = await Course.create({
+      title: 'Python Problem Solving',
+      description: 'Build confidence with Python through practical problem-solving challenges.',
+      instructor: teacher2._id,
+      targetGrades: [7, 8, 9],
+      difficulty: 'beginner',
+      topics: ['variables', 'conditionals', 'loops', 'functions'],
+      isPublished: true,
+      enrolledStudents: [student2._id, student3._id]
+    });
+
+    const course5 = await Course.create({
+      title: 'Algorithmic Thinking with Games',
+      description: 'Learn algorithm design by solving logic and game-inspired challenges.',
+      instructor: teacher1._id,
+      targetGrades: [9, 10, 11],
+      difficulty: 'intermediate',
+      topics: ['greedy', 'dynamic programming', 'graphs', 'optimization'],
+      isPublished: true,
+      enrolledStudents: [student1._id, student2._id]
+    });
+
+    const course6 = await Course.create({
+      title: 'Node.js and API Engineering',
+      description: 'Design and build robust REST APIs with Node.js, Express, and MongoDB.',
+      instructor: teacher2._id,
+      targetGrades: [10, 11, 12],
+      difficulty: 'advanced',
+      topics: ['express', 'routing', 'middleware', 'api-design', 'mongodb'],
+      isPublished: true,
+      enrolledStudents: [student1._id]
+    });
+
+    teacher1.teachingCourses = [course1._id, course3._id, course5._id];
+    teacher2.teachingCourses = [course2._id, course4._id, course6._id];
     await teacher1.save();
     await teacher2.save();
 
-    student1.enrolledCourses = [course1._id, course2._id, course3._id];
-    student2.enrolledCourses = [course1._id, course2._id];
-    student3.enrolledCourses = [course1._id];
+    student1.enrolledCourses = [course1._id, course2._id, course3._id, course5._id, course6._id];
+    student2.enrolledCourses = [course1._id, course2._id, course4._id, course5._id];
+    student3.enrolledCourses = [course1._id, course4._id];
     await student1.save();
     await student2.save();
     await student3.save();
@@ -241,11 +274,208 @@ async function seed() {
       createdBy: teacher2._id
     });
 
+    const challenge5 = await Challenge.create({
+      title: 'Reusable Card Component',
+      description: 'Build a reusable React Card component with props for title, content, and footer.',
+      course: course2._id,
+      difficulty: 'medium',
+      objectives: ['Component props', 'Reusable UI patterns', 'Composition'],
+      instructions: 'Create a Card component that can render dynamic title/content/footer props.',
+      initialCode: '// Build a Card component that accepts props and renders children',
+      expectedOutput: 'A reusable card component',
+      testCases: [],
+      hints: ['Pass props into JSX', 'Use children for flexible content'],
+      gamificationPoints: 120,
+      isBlockBased: true,
+      blocklyXml: '<xml></xml>',
+      order: 2,
+      createdBy: teacher2._id
+    });
+
+    const challenge6 = await Challenge.create({
+      title: 'State-Driven Todo List',
+      description: 'Implement a simple todo list using React state and list rendering.',
+      course: course2._id,
+      difficulty: 'hard',
+      objectives: ['State arrays', 'List rendering', 'Event handling'],
+      instructions: 'Create a todo list with add and remove functionality.',
+      initialCode: '// Use state to store todos and render them with map()',
+      expectedOutput: 'A working todo list',
+      testCases: [],
+      hints: ['Use useState for list data', 'Use filter to remove items'],
+      gamificationPoints: 170,
+      isBlockBased: true,
+      blocklyXml: '<xml></xml>',
+      order: 3,
+      createdBy: teacher2._id
+    });
+
+    const challenge7 = await Challenge.create({
+      title: 'Binary Search Drill',
+      description: 'Implement binary search to locate a target value in a sorted array.',
+      course: course3._id,
+      difficulty: 'medium',
+      objectives: ['Search algorithms', 'Loop invariants', 'Complexity thinking'],
+      instructions: 'Write a function binarySearch(arr, target) returning the index or -1.',
+      initialCode: 'function binarySearch(arr, target) {\n  // your code\n}',
+      expectedOutput: '2',
+      testCases: [
+        { input: 'binarySearch([1,3,5,7], 5)', expectedOutput: '2', description: 'find existing value' },
+        { input: 'binarySearch([1,3,5,7], 6)', expectedOutput: '-1', description: 'missing value' }
+      ],
+      hints: ['Track left/right pointers', 'Move mid intelligently'],
+      gamificationPoints: 130,
+      isBlockBased: true,
+      blocklyXml: '<xml></xml>',
+      order: 1,
+      createdBy: teacher1._id
+    });
+
+    const challenge8 = await Challenge.create({
+      title: 'Queue with Two Stacks',
+      description: 'Design a queue data structure using two stacks.',
+      course: course3._id,
+      difficulty: 'hard',
+      objectives: ['Data structure composition', 'Amortized reasoning'],
+      instructions: 'Implement enqueue and dequeue with two arrays representing stacks.',
+      initialCode: '// Implement a queue using two stacks',
+      expectedOutput: 'FIFO behavior',
+      testCases: [],
+      hints: ['Use one stack for incoming, one for outgoing'],
+      gamificationPoints: 190,
+      isBlockBased: true,
+      blocklyXml: '<xml></xml>',
+      order: 2,
+      createdBy: teacher1._id
+    });
+
+    const challenge9 = await Challenge.create({
+      title: 'FizzBuzz in Python',
+      description: 'Solve classic FizzBuzz with clean loop logic.',
+      course: course4._id,
+      difficulty: 'easy',
+      objectives: ['Modulo logic', 'Looping', 'Output formatting'],
+      instructions: 'Print numbers 1-30 with Fizz/Buzz replacements.',
+      initialCode: '# write your fizzbuzz solution here',
+      expectedOutput: 'FizzBuzz sequence',
+      testCases: [],
+      hints: ['Check divisibility by 3 and 5 first'],
+      gamificationPoints: 60,
+      isBlockBased: true,
+      blocklyXml: '<xml></xml>',
+      order: 1,
+      createdBy: teacher2._id
+    });
+
+    const challenge10 = await Challenge.create({
+      title: 'Palindrome Checker',
+      description: 'Build a function to test whether a word is a palindrome.',
+      course: course4._id,
+      difficulty: 'medium',
+      objectives: ['String manipulation', 'Function structure'],
+      instructions: 'Return true if text reads the same forwards and backwards.',
+      initialCode: 'def is_palindrome(text):\n    # your code\n    pass',
+      expectedOutput: 'true',
+      testCases: [
+        { input: 'is_palindrome("level")', expectedOutput: 'true', description: 'palindrome case' },
+        { input: 'is_palindrome("hello")', expectedOutput: 'false', description: 'non-palindrome case' }
+      ],
+      hints: ['Normalize case first', 'Compare against reversed text'],
+      gamificationPoints: 95,
+      isBlockBased: true,
+      blocklyXml: '<xml></xml>',
+      order: 2,
+      createdBy: teacher2._id
+    });
+
+    const challenge11 = await Challenge.create({
+      title: 'Shortest Path Basics',
+      description: 'Compute shortest path distance in a weighted graph (small input).',
+      course: course5._id,
+      difficulty: 'hard',
+      objectives: ['Graph modeling', 'Priority queue intuition'],
+      instructions: 'Implement a shortest path function for a small graph representation.',
+      initialCode: '// implement shortestPath(graph, start, target)',
+      expectedOutput: 'minimum distance',
+      testCases: [],
+      hints: ['Track best distances as you explore nodes'],
+      gamificationPoints: 200,
+      isBlockBased: true,
+      blocklyXml: '<xml></xml>',
+      order: 1,
+      createdBy: teacher1._id
+    });
+
+    const challenge12 = await Challenge.create({
+      title: 'Coin Change Strategy',
+      description: 'Find the minimum number of coins needed to form a value.',
+      course: course5._id,
+      difficulty: 'hard',
+      objectives: ['Dynamic programming', 'Subproblem design'],
+      instructions: 'Write minCoins(coins, amount) returning the minimum coins or -1.',
+      initialCode: 'function minCoins(coins, amount) {\n  // your code\n}',
+      expectedOutput: '2',
+      testCases: [
+        { input: 'minCoins([1,2,5], 11)', expectedOutput: '3', description: 'basic case' },
+        { input: 'minCoins([2], 3)', expectedOutput: '-1', description: 'impossible case' }
+      ],
+      hints: ['Build solutions from smaller amounts'],
+      gamificationPoints: 210,
+      isBlockBased: true,
+      blocklyXml: '<xml></xml>',
+      order: 2,
+      createdBy: teacher1._id
+    });
+
+    const challenge13 = await Challenge.create({
+      title: 'REST Endpoint Builder',
+      description: 'Create an Express route with validation and proper status codes.',
+      course: course6._id,
+      difficulty: 'medium',
+      objectives: ['REST conventions', 'Input validation', 'Response handling'],
+      instructions: 'Implement POST /api/items with validation and JSON response.',
+      initialCode: '// create express route for POST /api/items',
+      expectedOutput: '201 for valid payload',
+      testCases: [],
+      hints: ['Validate required fields before saving'],
+      gamificationPoints: 140,
+      isBlockBased: true,
+      blocklyXml: '<xml></xml>',
+      order: 1,
+      createdBy: teacher2._id
+    });
+
+    const challenge14 = await Challenge.create({
+      title: 'Auth Middleware Guard',
+      description: 'Implement JWT middleware to protect private endpoints.',
+      course: course6._id,
+      difficulty: 'hard',
+      objectives: ['Middleware patterns', 'Token verification', 'Error responses'],
+      instructions: 'Write middleware that verifies JWT and sets req.user.',
+      initialCode: '// write auth middleware(req, res, next)',
+      expectedOutput: 'authorized requests pass',
+      testCases: [],
+      hints: ['Return 401 when token is missing/invalid'],
+      gamificationPoints: 180,
+      isBlockBased: true,
+      blocklyXml: '<xml></xml>',
+      order: 2,
+      createdBy: teacher2._id
+    });
+
     // Update courses to include challenges
     course1.challenges = [challenge1._id, challenge2._id, challenge3._id];
-    course2.challenges = [challenge4._id];
+    course2.challenges = [challenge4._id, challenge5._id, challenge6._id];
+    course3.challenges = [challenge7._id, challenge8._id];
+    course4.challenges = [challenge9._id, challenge10._id];
+    course5.challenges = [challenge11._id, challenge12._id];
+    course6.challenges = [challenge13._id, challenge14._id];
     await course1.save();
     await course2.save();
+    await course3.save();
+    await course4.save();
+    await course5.save();
+    await course6.save();
     console.log('✅ Challenges created');
 
     // Create badges
