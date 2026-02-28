@@ -51,23 +51,28 @@
 }
 
 .course-nav button {
-  background: transparent;
-  border: none;
+  background: #f4f8ff;
+  border: 1px solid #dbe3f5;
   padding: 12px 20px;
   font-size: 16px;
   font-weight: 600;
-  color: #59657f;
+  color: #364564;
   cursor: pointer;
   border-bottom: 3px solid transparent;
+  border-radius: 10px 10px 0 0;
   transition: all 0.2s;
 }
 
 .course-nav button:hover {
   color: #2f5cff;
+  background: #ebf1ff;
+  border-color: #cdd9f5;
 }
 
 .course-nav button.active {
   color: #2f5cff;
+  background: #ffffff;
+  border-color: #b8c9f2;
   border-bottom-color: #2f5cff;
 }
 
