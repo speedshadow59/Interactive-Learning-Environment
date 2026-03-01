@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Challenge = require('../models/Challenge');
 const Course = require('../models/Course');
+const Assignment = require('../models/Assignment');
 const { authenticate } = require('../middleware/authMiddleware');
 
 // Get all challenges for a course
@@ -132,6 +133,47 @@ router.patch('/:id', authenticate, async (req, res) => {
 
     await challenge.save();
     return res.json({ message: 'Challenge updated successfully', challenge });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+// Delete challenge (teacher/admin only, scoped to course ownership)
+router.delete('/:id', authenticate, async (req, res) => {
+  try {
+    if (req.user.role === 'student') {
+      return res.status(403).json({ message: 'Only teachers can delete challenges' });
+    }
+
+    const challenge = await Challenge.findById(req.params.id);
+    if (!challenge) {
+      return res.status(404).json({ message: 'Challenge not found' });
+    }
+
+    const courseDoc = await Course.findById(challenge.course);
+    if (!courseDoc) {
+      return res.status(404).json({ message: 'Course not found for challenge' });
+    }
+
+    const isAdmin = req.user.role === 'admin';
+    const isInstructor = courseDoc.instructor?.toString() === req.user.userId;
+    if (!isAdmin && !isInstructor) {
+      return res.status(403).json({ message: 'You can only delete challenges for your own courses' });
+    }
+
+    const linkedAssignments = await Assignment.countDocuments({ challenge: challenge._id });
+    if (linkedAssignments > 0) {
+      return res.status(409).json({
+        message: 'Cannot delete challenge because it is linked to assignments. Remove those assignments first.',
+      });
+    }
+
+    await Challenge.findByIdAndDelete(challenge._id);
+    await Course.findByIdAndUpdate(courseDoc._id, {
+      $pull: { challenges: challenge._id },
+    });
+
+    return res.json({ message: 'Challenge deleted successfully' });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

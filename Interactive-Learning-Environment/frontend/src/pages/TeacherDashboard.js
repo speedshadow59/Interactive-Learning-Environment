@@ -40,6 +40,7 @@ const TeacherDashboard = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submittingChallenge, setSubmittingChallenge] = useState(false);
   const [submittingChallengeEdit, setSubmittingChallengeEdit] = useState(false);
+  const [deletingChallenge, setDeletingChallenge] = useState(false);
   const [submittingAssignment, setSubmittingAssignment] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -714,6 +715,49 @@ const TeacherDashboard = () => {
     }
   };
 
+  const handleDeleteChallenge = async () => {
+    setEditChallengeError('');
+    setEditChallengeSuccess('');
+
+    if (!editChallengeId) {
+      setEditChallengeError('Please select a challenge to delete.');
+      return;
+    }
+
+    const selectedChallengeTitle =
+      selectedEditCourseOption?.challenges?.find((challenge) => challenge.id === editChallengeId)?.title || 'this challenge';
+
+    const confirmed = window.confirm(
+      `Delete "${selectedChallengeTitle}"? This cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    setDeletingChallenge(true);
+    try {
+      await apiClient.delete(`/challenges/${editChallengeId}`);
+      setEditChallengeSuccess('Challenge deleted successfully.');
+      setEditChallengeId('');
+      setChallengeEditForm({
+        title: '',
+        description: '',
+        difficulty: 'easy',
+        instructions: '',
+        initialCode: '',
+        objectivesText: '',
+        hintsText: '',
+        expectedOutput: '',
+        gamificationPoints: 100,
+        isBlockBased: true,
+      });
+      await refreshDashboard();
+    } catch (err) {
+      setEditChallengeError(err.response?.data?.message || 'Unable to delete challenge');
+    } finally {
+      setDeletingChallenge(false);
+    }
+  };
+
   const handleExportCsv = async () => {
     try {
       const response = await apiClient.get('/dashboard/teacher/export.csv', {
@@ -1195,6 +1239,14 @@ const TeacherDashboard = () => {
             <div className="form-actions">
               <button className="btn btn-primary" type="submit" disabled={submittingChallengeEdit || !editChallengeId}>
                 {submittingChallengeEdit ? 'Saving...' : 'Save Challenge Changes'}
+              </button>
+              <button
+                className="btn btn-secondary"
+                type="button"
+                onClick={handleDeleteChallenge}
+                disabled={deletingChallenge || !editChallengeId || submittingChallengeEdit}
+              >
+                {deletingChallenge ? 'Deleting...' : 'Delete Challenge'}
               </button>
             </div>
           </form>
