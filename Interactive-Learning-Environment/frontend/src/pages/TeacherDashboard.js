@@ -36,6 +36,7 @@ const TeacherDashboard = () => {
   const [rosterFilterYearGroup, setRosterFilterYearGroup] = useState('');
   const [rosterRiskOnly, setRosterRiskOnly] = useState(false);
   const [rosterSearch, setRosterSearch] = useState('');
+  const [remediationDueInDays, setRemediationDueInDays] = useState('7');
   const [assignmentFilter, setAssignmentFilter] = useState('all');
   const [rosterLoading, setRosterLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -402,7 +403,7 @@ const TeacherDashboard = () => {
     try {
       await apiClient.post('/assignments/remediation', {
         studentId,
-        dueInDays: 7,
+        dueInDays: Number(remediationDueInDays) || 7,
       });
 
       setRemediationStatusByStudent((prev) => ({
@@ -1464,6 +1465,21 @@ const TeacherDashboard = () => {
         <div className="section-header">
           <h2>Student Roster</h2>
           <span className="section-subtitle">Filter by course and year group, with at-risk highlighting</span>
+        </div>
+
+        <div className="form-row form-row-tight-top">
+          <div className="form-group">
+            <label htmlFor="remediationDueIn">Default remediation due in</label>
+            <select
+              id="remediationDueIn"
+              value={remediationDueInDays}
+              onChange={(event) => setRemediationDueInDays(event.target.value)}
+            >
+              <option value="3">3 days</option>
+              <option value="7">7 days</option>
+              <option value="14">14 days</option>
+            </select>
+          </div>
         </div>
 
         <div className="form-row">
