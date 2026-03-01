@@ -1605,7 +1605,7 @@ const TeacherDashboard = () => {
                   </span>
                   {student.isAtRisk && (
                     <button
-                      className="btn btn-primary btn-spaced-bottom"
+                      className="btn btn-primary btn-spaced-bottom roster-remediation-btn"
                       type="button"
                       onClick={() => handleAssignRemediation(student)}
                       disabled={remediationStatusByStudent[student.id]?.loading}
