@@ -1603,16 +1603,18 @@ const TeacherDashboard = () => {
                   <span className={`badge ${student.isAtRisk ? '' : 'badge-muted'}`}>
                     {student.isAtRisk ? 'At Risk' : 'On Track'}
                   </span>
-                  {student.isAtRisk && (
-                    <button
-                      className="btn btn-secondary btn-spaced-bottom"
-                      type="button"
-                      onClick={() => handleAssignRemediation(student)}
-                      disabled={remediationStatusByStudent[student.id]?.loading}
-                    >
-                      {remediationStatusByStudent[student.id]?.loading ? 'Assigning...' : 'Assign Easy Remediation'}
-                    </button>
-                  )}
+                  <button
+                    className="btn btn-secondary btn-spaced-bottom"
+                    type="button"
+                    onClick={() => handleAssignRemediation(student)}
+                    disabled={remediationStatusByStudent[student.id]?.loading}
+                  >
+                    {remediationStatusByStudent[student.id]?.loading
+                      ? 'Assigning...'
+                      : student.isAtRisk
+                        ? 'Assign Easy Remediation'
+                        : 'Assign Remediation'}
+                  </button>
                   {remediationStatusByStudent[student.id]?.message && (
                     <div className="section-subtitle">{remediationStatusByStudent[student.id].message}</div>
                   )}
