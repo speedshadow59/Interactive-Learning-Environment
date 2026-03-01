@@ -18,6 +18,8 @@ const getAssignmentStatusLabel = (status) => {
   return 'Pending';
 };
 
+const difficultyRank = { beginner: 1, intermediate: 2, advanced: 3 };
+
 const StudentDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [availableCourses, setAvailableCourses] = useState([]);
@@ -89,13 +91,32 @@ const StudentDashboard = () => {
   );
 
   const studentGrade = dashboardData?.user?.grade;
+  const adaptiveProfile = dashboardData?.adaptiveProfile || null;
+
+  const targetCourseDifficulty = adaptiveProfile?.targetDifficulty === 'easy'
+    ? 'beginner'
+    : adaptiveProfile?.targetDifficulty === 'hard'
+      ? 'advanced'
+      : 'intermediate';
+
   const recommendedCourses = useMemo(
-    () => filteredAvailableCourses.filter((course) => (
-      studentGrade && Array.isArray(course.targetGrades)
-        ? course.targetGrades.includes(studentGrade)
-        : false
-    )),
-    [filteredAvailableCourses, studentGrade]
+    () => filteredAvailableCourses
+      .filter((course) => (
+        studentGrade && Array.isArray(course.targetGrades)
+          ? course.targetGrades.includes(studentGrade)
+          : false
+      ))
+      .sort((a, b) => {
+        const aDiff = Math.abs((difficultyRank[a.difficulty] || 2) - (difficultyRank[targetCourseDifficulty] || 2));
+        const bDiff = Math.abs((difficultyRank[b.difficulty] || 2) - (difficultyRank[targetCourseDifficulty] || 2));
+        return aDiff - bDiff;
+      }),
+    [filteredAvailableCourses, studentGrade, targetCourseDifficulty]
+  );
+
+  const adaptiveRecommendations = useMemo(
+    () => dashboardData?.adaptiveRecommendations || [],
+    [dashboardData?.adaptiveRecommendations]
   );
 
   const allAssignments = useMemo(
@@ -291,9 +312,13 @@ const StudentDashboard = () => {
           {dashboardData?.user?.grade && (
             <span className="section-subtitle">
               Recommended for {formatYearLabel(dashboardData.user.grade)}
+              {adaptiveProfile?.targetDifficulty ? ` • Target difficulty: ${adaptiveProfile.targetDifficulty}` : ''}
             </span>
           )}
         </div>
+        {adaptiveProfile?.recommendationReason && (
+          <p className="section-subtitle">{adaptiveProfile.recommendationReason}</p>
+        )}
         {enrollError && <div className="error">{enrollError}</div>}
         {recommendedCourses.length > 0 ? (
           <div className="courses-grid">
@@ -321,6 +346,38 @@ const StudentDashboard = () => {
           </div>
         ) : (
           <p className="empty-state">No recommended courses yet for your year group.</p>
+        )}
+      </div>
+
+      <div className="section-card">
+        <div className="section-header">
+          <h2>Recommended Challenges</h2>
+          {adaptiveProfile && (
+            <span className="section-subtitle">
+              Learning path: {adaptiveProfile.recommendedLearningPath || 'visual'}
+              {adaptiveProfile.recentPassRate !== null
+                ? ` • Recent pass rate: ${adaptiveProfile.recentPassRate}%`
+                : ''}
+            </span>
+          )}
+        </div>
+        {adaptiveRecommendations.length > 0 ? (
+          <ul className="progress-list">
+            {adaptiveRecommendations.map((recommendation) => (
+              <li key={recommendation.id}>
+                <div>
+                  <strong>{recommendation.title}</strong>
+                  <div>{recommendation.courseTitle} • {recommendation.difficulty}</div>
+                  <div className="section-subtitle">{recommendation.reason}</div>
+                </div>
+                <a href={`/challenges/${recommendation.id}`} className="btn btn-secondary">
+                  Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="empty-state">No challenge recommendations yet. Keep submitting solutions to build your adaptive profile.</p>
         )}
       </div>
 

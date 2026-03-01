@@ -6,6 +6,7 @@ const Course = require('../models/Course');
 const Submission = require('../models/Submission');
 const Progress = require('../models/Progress');
 const Assignment = require('../models/Assignment');
+const Challenge = require('../models/Challenge');
 const { calculateLevelFromExperience } = require('../utils/progression');
 
 /*
@@ -529,6 +530,7 @@ router.get('/student', authenticate, async (req, res) => {
 
       return {
         id: assignment._id,
+        challengeId: assignment.challenge?._id || null,
         title: assignment.title,
         dueDate: assignment.dueDate,
         courseTitle: assignment.course?.title || 'Course',
@@ -536,6 +538,18 @@ router.get('/student', authenticate, async (req, res) => {
         status,
       };
     });
+
+    const overdueChallengeIds = new Set(
+      assignmentSummary
+        .filter((assignment) => assignment.status === 'overdue' && assignment.challengeId)
+        .map((assignment) => assignment.challengeId.toString())
+    );
+
+    const pendingChallengeIds = new Set(
+      assignmentSummary
+        .filter((assignment) => assignment.status === 'pending' && assignment.challengeId)
+        .map((assignment) => assignment.challengeId.toString())
+    );
 
     const progressCourseIds = [...new Set(progressData.map(p => p.course.toString()))];
     const progressCourses = progressCourseIds.length
@@ -584,6 +598,117 @@ router.get('/student', authenticate, async (req, res) => {
 
     const totalExperience = progressData.reduce((sum, p) => sum + (p.experiencePoints || 0), 0);
 
+    const recentSubmissions = await Submission.find(
+      { student: req.user.userId },
+      'result submittedAt'
+    )
+      .sort({ submittedAt: -1 })
+      .limit(12);
+
+    const recentEvaluated = recentSubmissions.filter((submission) =>
+      submission.result === 'passed' || submission.result === 'failed'
+    );
+
+    const passedCount = recentEvaluated.filter((submission) => submission.result === 'passed').length;
+    const passRate = recentEvaluated.length > 0
+      ? passedCount / recentEvaluated.length
+      : null;
+
+    const overdueCount = assignmentSummary.filter((assignment) => assignment.status === 'overdue').length;
+
+    let targetDifficulty = 'medium';
+    let recommendationReason = 'Balanced progression based on current activity.';
+
+    if (overdueCount > 0) {
+      targetDifficulty = 'easy';
+      recommendationReason = 'Recent overdue work detected, so easier challenges are prioritised first.';
+    } else if (passRate !== null && recentEvaluated.length >= 3) {
+      if (passRate >= 0.75) {
+        targetDifficulty = 'hard';
+        recommendationReason = 'Strong recent performance, so harder challenges are recommended.';
+      } else if (passRate <= 0.45) {
+        targetDifficulty = 'easy';
+        recommendationReason = 'Recent attempts show difficulty, so foundational challenges are recommended.';
+      }
+    }
+
+    const completedChallengeIds = new Set(
+      progressData.flatMap((progress) =>
+        (progress.completedChallenges || []).map((item) => item.challenge?.toString()).filter(Boolean)
+      )
+    );
+
+    const enrolledCourseIds = enrolledCourses.map((course) => course._id);
+    const enrolledCourseTitleMap = new Map(
+      enrolledCourses.map((course) => [course._id.toString(), course.title])
+    );
+
+    const candidateChallenges = enrolledCourseIds.length
+      ? await Challenge.find({
+          course: { $in: enrolledCourseIds },
+          isPublished: true,
+          _id: { $nin: Array.from(completedChallengeIds) },
+        }, 'title difficulty course gamificationPoints')
+      : [];
+
+    const difficultyWeight = { easy: 1, medium: 2, hard: 3 };
+    const targetWeight = difficultyWeight[targetDifficulty] || 2;
+
+    const adaptiveRecommendations = candidateChallenges
+      .map((challenge) => {
+        const challengeId = challenge._id.toString();
+        const challengeWeight = difficultyWeight[challenge.difficulty] || 2;
+        const diffDistance = Math.abs(challengeWeight - targetWeight);
+
+        let score = 40 - diffDistance * 15;
+        const reasons = [];
+
+        if (challenge.difficulty === targetDifficulty) {
+          reasons.push(`Matches your current target difficulty (${targetDifficulty}).`);
+        }
+
+        if (overdueChallengeIds.has(challengeId)) {
+          score += 30;
+          reasons.push('Linked to overdue work and should be prioritised.');
+        } else if (pendingChallengeIds.has(challengeId)) {
+          score += 20;
+          reasons.push('Linked to pending assigned work.');
+        }
+
+        if ((challenge.gamificationPoints || 0) >= 150 && targetDifficulty === 'hard') {
+          score += 8;
+          reasons.push('High-value challenge aligned with your recent progress.');
+        }
+
+        if (!reasons.length) {
+          reasons.push('Recommended to keep your learning path moving forward.');
+        }
+
+        return {
+          id: challenge._id,
+          title: challenge.title,
+          difficulty: challenge.difficulty,
+          courseId: challenge.course,
+          courseTitle: enrolledCourseTitleMap.get(challenge.course.toString()) || 'Course',
+          reason: reasons.join(' '),
+          score,
+        };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+
+    const learningPathVotes = progressData.reduce(
+      (acc, progress) => {
+        const path = progress.learningPath || 'visual';
+        acc[path] = (acc[path] || 0) + 1;
+        return acc;
+      },
+      { visual: 0, 'text-based': 0, mixed: 0 }
+    );
+
+    const recommendedPath = Object.entries(learningPathVotes)
+      .sort((a, b) => b[1] - a[1])[0]?.[0] || 'visual';
+
     const dashboardData = {
       user: user.toJSON(),
       enrolledCourses: enrolledCourses.map(c => ({
@@ -602,6 +727,14 @@ router.get('/student', authenticate, async (req, res) => {
       assignments: assignmentSummary,
       leaderboard,
       myLeaderboardRank: studentLeaderboardIndex >= 0 ? studentLeaderboardIndex + 1 : null,
+      adaptiveProfile: {
+        targetDifficulty,
+        recommendationReason,
+        recentPassRate: passRate !== null ? Math.round(passRate * 100) : null,
+        recentEvaluatedAttempts: recentEvaluated.length,
+        recommendedLearningPath: recommendedPath,
+      },
+      adaptiveRecommendations,
     };
 
     res.json(dashboardData);
