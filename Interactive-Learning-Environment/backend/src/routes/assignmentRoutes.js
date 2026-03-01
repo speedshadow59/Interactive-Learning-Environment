@@ -116,25 +116,21 @@ router.post('/remediation', authenticate, async (req, res) => {
       return res.status(400).json({ message: 'studentId is required' });
     }
 
-    const teacherCourseFilter = isAdmin(req.user.role)
-      ? {}
-      : { instructor: req.user.userId };
+    const normalizedStudentId = String(studentId);
+    const remediationCourseFilter = {
+      enrolledStudents: normalizedStudentId,
+      ...(isAdmin(req.user.role) ? {} : { instructor: req.user.userId }),
+      ...(courseId ? { _id: courseId } : {}),
+    };
 
-    const candidateCourses = await Course.find(teacherCourseFilter)
-      .populate('challenges', 'title difficulty')
-      .populate('enrolledStudents', '_id');
-
-    const eligibleCourses = candidateCourses.filter((course) =>
-      course.enrolledStudents.some((student) => student._id.toString() === studentId)
-    );
+    const eligibleCourses = await Course.find(remediationCourseFilter)
+      .populate('challenges', 'title difficulty');
 
     if (!eligibleCourses.length) {
       return res.status(404).json({ message: 'No eligible course found for this student' });
     }
 
-    const selectedCourse = courseId
-      ? eligibleCourses.find((course) => course._id.toString() === courseId)
-      : eligibleCourses[0];
+    const selectedCourse = eligibleCourses[0];
 
     if (!selectedCourse) {
       return res.status(404).json({ message: 'Selected course is not eligible for remediation assignment' });
@@ -157,7 +153,7 @@ router.post('/remediation', authenticate, async (req, res) => {
       course: selectedCourse._id,
       challenge: challenge._id,
       teacher: req.user.userId,
-      assignedTo: [studentId],
+      assignedTo: [normalizedStudentId],
       dueDate,
       isPublished: true,
     });
