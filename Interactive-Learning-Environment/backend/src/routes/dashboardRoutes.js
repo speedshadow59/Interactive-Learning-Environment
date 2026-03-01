@@ -121,6 +121,20 @@ const buildTeacherRoster = async (teacherId, role, filters = {}) => {
     return acc;
   }, {});
 
+  const evaluatedSubmissionsByStudent = submissions.reduce((acc, submission) => {
+    if (submission.result !== 'passed' && submission.result !== 'failed') return acc;
+
+    const studentId = submission.student?.toString();
+    if (!studentId) return acc;
+
+    if (!acc[studentId]) {
+      acc[studentId] = [];
+    }
+
+    acc[studentId].push(submission);
+    return acc;
+  }, {});
+
   const studentProgressMap = progressRows.reduce((acc, row) => {
     const studentId = row.student.toString();
     if (!acc[studentId]) {
@@ -211,6 +225,43 @@ const buildTeacherRoster = async (teacherId, role, filters = {}) => {
         riskReasons.push('Low recent activity');
       }
 
+      const recentEvaluated = (evaluatedSubmissionsByStudent[studentId] || [])
+        .slice()
+        .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))
+        .slice(0, 8);
+
+      const passedCount = recentEvaluated.filter((submission) => submission.result === 'passed').length;
+      const passRate = recentEvaluated.length > 0
+        ? passedCount / recentEvaluated.length
+        : null;
+
+      let targetDifficulty = 'medium';
+      let recommendationReason = 'Balanced progression based on current learning signals.';
+
+      if (assignmentStatus.overdue > 0) {
+        targetDifficulty = 'easy';
+        recommendationReason = 'Overdue work detected, prioritise easier confidence-building tasks first.';
+      } else if (passRate !== null && recentEvaluated.length >= 3) {
+        if (passRate >= 0.75) {
+          targetDifficulty = 'hard';
+          recommendationReason = 'Strong pass trend, student is ready for stretch challenges.';
+        } else if (passRate <= 0.45) {
+          targetDifficulty = 'easy';
+          recommendationReason = 'Recent failed attempts suggest consolidating fundamentals first.';
+        }
+      }
+
+      let interventionHint = 'Monitor and continue standard progression.';
+      if (assignmentStatus.overdue > 0 && passRate !== null && passRate < 0.5) {
+        interventionHint = 'Schedule intervention: assign easy remediation challenge and provide targeted feedback.';
+      } else if (assignmentStatus.overdue > 0) {
+        interventionHint = 'Follow up on overdue tasks and set a short-term completion target.';
+      } else if (passRate !== null && passRate < 0.5) {
+        interventionHint = 'Review misconceptions and provide guided practice before new hard content.';
+      } else if (passRate !== null && passRate >= 0.75) {
+        interventionHint = 'Offer extension work to maintain challenge and engagement.';
+      }
+
       return {
         id: student.id,
         name: `${student.firstName} ${student.lastName}`,
@@ -224,6 +275,13 @@ const buildTeacherRoster = async (teacherId, role, filters = {}) => {
         failedSubmissions: failedSubmissionCounts[studentId] || 0,
         isAtRisk: riskReasons.length > 0,
         riskReasons,
+        adaptiveProfile: {
+          targetDifficulty,
+          recommendationReason,
+          recentPassRate: passRate !== null ? Math.round(passRate * 100) : null,
+          recentEvaluatedAttempts: recentEvaluated.length,
+        },
+        interventionHint,
       };
     })
     .filter((student) => (hasYearGroupFilter ? student.grade === yearGroupFilter : true))

@@ -1537,8 +1537,17 @@ const TeacherDashboard = () => {
                   <div>
                     Last active: {student.lastActivityAt ? new Date(student.lastActivityAt).toLocaleDateString() : 'No activity yet'}
                   </div>
+                  <div>
+                    Adaptive target: {student.adaptiveProfile?.targetDifficulty || 'medium'}
+                    {student.adaptiveProfile?.recentPassRate !== null && student.adaptiveProfile?.recentPassRate !== undefined
+                      ? ` • Recent pass rate: ${student.adaptiveProfile.recentPassRate}%`
+                      : ''}
+                  </div>
                   {student.riskReasons?.length > 0 && (
                     <div className="section-subtitle">{student.riskReasons.join(' • ')}</div>
+                  )}
+                  {student.interventionHint && (
+                    <div className="section-subtitle">Intervention: {student.interventionHint}</div>
                   )}
                 </div>
                 <div>
