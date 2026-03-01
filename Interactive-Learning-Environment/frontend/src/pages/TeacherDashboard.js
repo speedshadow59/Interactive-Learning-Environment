@@ -10,9 +10,12 @@ const TeacherDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showChallengeForm, setShowChallengeForm] = useState(false);
   const [showAssignmentForm, setShowAssignmentForm] = useState(false);
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
+  const [challengeError, setChallengeError] = useState('');
+  const [challengeSuccess, setChallengeSuccess] = useState('');
   const [assignmentError, setAssignmentError] = useState('');
   const [assignmentSuccess, setAssignmentSuccess] = useState('');
   const [reviewCourseId, setReviewCourseId] = useState('');
@@ -32,6 +35,7 @@ const TeacherDashboard = () => {
   const [assignmentFilter, setAssignmentFilter] = useState('all');
   const [rosterLoading, setRosterLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submittingChallenge, setSubmittingChallenge] = useState(false);
   const [submittingAssignment, setSubmittingAssignment] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -48,6 +52,19 @@ const TeacherDashboard = () => {
     challengeId: '',
     dueDate: '',
     assignedTo: []
+  });
+  const [challengeForm, setChallengeForm] = useState({
+    title: '',
+    description: '',
+    courseId: '',
+    difficulty: 'easy',
+    instructions: '',
+    initialCode: '',
+    objectivesText: '',
+    hintsText: '',
+    expectedOutput: '',
+    gamificationPoints: 100,
+    isBlockBased: true,
   });
   const yearGroups = Array.from({ length: 13 }, (_, index) => index + 1);
   const formatYearLabel = (year) => {
@@ -492,6 +509,77 @@ const TeacherDashboard = () => {
     }
   };
 
+  const handleChallengeInputChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setChallengeForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleCreateChallenge = async (event) => {
+    event.preventDefault();
+    setChallengeError('');
+    setChallengeSuccess('');
+
+    if (!challengeForm.title || !challengeForm.description || !challengeForm.courseId) {
+      setChallengeError('Title, description, and course are required.');
+      return;
+    }
+
+    const objectives = challengeForm.objectivesText
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const hints = challengeForm.hintsText
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const payload = {
+      title: challengeForm.title,
+      description: challengeForm.description,
+      course: challengeForm.courseId,
+      difficulty: challengeForm.difficulty,
+      instructions: challengeForm.instructions,
+      initialCode: challengeForm.initialCode,
+      objectives,
+      hints,
+      expectedOutput: challengeForm.expectedOutput || undefined,
+      gamificationPoints: Number(challengeForm.gamificationPoints) || 100,
+      isBlockBased: Boolean(challengeForm.isBlockBased),
+      testCases: challengeForm.expectedOutput
+        ? [{ input: '', expectedOutput: challengeForm.expectedOutput, description: 'Primary expected output' }]
+        : [],
+    };
+
+    setSubmittingChallenge(true);
+    try {
+      await apiClient.post('/challenges', payload);
+      setChallengeSuccess('Challenge created successfully.');
+      setChallengeForm({
+        title: '',
+        description: '',
+        courseId: '',
+        difficulty: 'easy',
+        instructions: '',
+        initialCode: '',
+        objectivesText: '',
+        hintsText: '',
+        expectedOutput: '',
+        gamificationPoints: 100,
+        isBlockBased: true,
+      });
+      setShowChallengeForm(false);
+      await refreshDashboard();
+    } catch (err) {
+      setChallengeError(err.response?.data?.message || 'Unable to create challenge');
+    } finally {
+      setSubmittingChallenge(false);
+    }
+  };
+
   const handleExportCsv = async () => {
     try {
       const response = await apiClient.get('/dashboard/teacher/export.csv', {
@@ -528,6 +616,12 @@ const TeacherDashboard = () => {
             onClick={handleExportCsv}
           >
             Export CSV Report
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowChallengeForm(prev => !prev)}
+          >
+            {showChallengeForm ? 'Close Challenge Form' : 'Create Challenge'}
           </button>
           <button
             className="btn btn-secondary"
@@ -634,6 +728,162 @@ const TeacherDashboard = () => {
             <div className="form-actions">
               <button className="btn btn-primary" type="submit" disabled={submitting}>
                 {submitting ? 'Creating...' : 'Create Course'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {showChallengeForm && (
+        <div className="section-card">
+          <div className="section-header">
+            <h2>Create a Challenge</h2>
+          </div>
+          {challengeError && <div className="error">{challengeError}</div>}
+          {challengeSuccess && <div className="success">{challengeSuccess}</div>}
+
+          <form className="dashboard-form" onSubmit={handleCreateChallenge}>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="challengeTitle">Title *</label>
+                <input
+                  id="challengeTitle"
+                  name="title"
+                  type="text"
+                  value={challengeForm.title}
+                  onChange={handleChallengeInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="challengeCourse">Course *</label>
+                <select
+                  id="challengeCourse"
+                  name="courseId"
+                  value={challengeForm.courseId}
+                  onChange={handleChallengeInputChange}
+                  required
+                >
+                  <option value="">Select course</option>
+                  {(dashboardData?.courses || []).map((course) => (
+                    <option key={course.id} value={course.id}>{course.title}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="challengeDifficulty">Difficulty</label>
+                <select
+                  id="challengeDifficulty"
+                  name="difficulty"
+                  value={challengeForm.difficulty}
+                  onChange={handleChallengeInputChange}
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="challengePoints">Points</label>
+                <input
+                  id="challengePoints"
+                  name="gamificationPoints"
+                  type="number"
+                  min="0"
+                  value={challengeForm.gamificationPoints}
+                  onChange={handleChallengeInputChange}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="challengeDescription">Description *</label>
+              <textarea
+                id="challengeDescription"
+                name="description"
+                rows="3"
+                value={challengeForm.description}
+                onChange={handleChallengeInputChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="challengeInstructions">Instructions</label>
+              <textarea
+                id="challengeInstructions"
+                name="instructions"
+                rows="3"
+                value={challengeForm.instructions}
+                onChange={handleChallengeInputChange}
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="challengeObjectives">Objectives (one per line)</label>
+                <textarea
+                  id="challengeObjectives"
+                  name="objectivesText"
+                  rows="4"
+                  value={challengeForm.objectivesText}
+                  onChange={handleChallengeInputChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="challengeHints">Hints (one per line)</label>
+                <textarea
+                  id="challengeHints"
+                  name="hintsText"
+                  rows="4"
+                  value={challengeForm.hintsText}
+                  onChange={handleChallengeInputChange}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="challengeInitialCode">Initial Code Template</label>
+              <textarea
+                id="challengeInitialCode"
+                name="initialCode"
+                rows="5"
+                value={challengeForm.initialCode}
+                onChange={handleChallengeInputChange}
+                placeholder="// Starter code shown to students"
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="challengeExpectedOutput">Expected Output (optional)</label>
+                <input
+                  id="challengeExpectedOutput"
+                  name="expectedOutput"
+                  type="text"
+                  value={challengeForm.expectedOutput}
+                  onChange={handleChallengeInputChange}
+                />
+              </div>
+              <div className="form-group form-toggle">
+                <label className="toggle-label toggle-label--offset">
+                  <input
+                    type="checkbox"
+                    name="isBlockBased"
+                    checked={challengeForm.isBlockBased}
+                    onChange={handleChallengeInputChange}
+                  />
+                  <span>Enable Block Mode</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="form-actions">
+              <button className="btn btn-primary" type="submit" disabled={submittingChallenge}>
+                {submittingChallenge ? 'Creating...' : 'Create Challenge'}
               </button>
             </div>
           </form>

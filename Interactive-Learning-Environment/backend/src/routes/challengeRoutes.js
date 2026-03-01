@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Challenge = require('../models/Challenge');
+const Course = require('../models/Course');
 const { authenticate } = require('../middleware/authMiddleware');
 
 // Get all challenges for a course
@@ -44,6 +45,21 @@ router.post('/', authenticate, async (req, res) => {
       gamificationPoints
     } = req.body;
 
+    if (!title || !description || !course) {
+      return res.status(400).json({ message: 'title, description, and course are required' });
+    }
+
+    const courseDoc = await Course.findById(course);
+    if (!courseDoc) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    const isAdmin = req.user.role === 'admin';
+    const isInstructor = courseDoc.instructor?.toString() === req.user.userId;
+    if (!isAdmin && !isInstructor) {
+      return res.status(403).json({ message: 'You can only create challenges for your own courses' });
+    }
+
     const challenge = new Challenge({
       title,
       description,
@@ -56,6 +72,10 @@ router.post('/', authenticate, async (req, res) => {
     });
 
     await challenge.save();
+    await Course.findByIdAndUpdate(courseDoc._id, {
+      $addToSet: { challenges: challenge._id }
+    });
+
     res.status(201).json({ message: 'Challenge created successfully', challenge });
   } catch (error) {
     res.status(500).json({ message: error.message });
