@@ -27,6 +27,7 @@ const TeacherDashboard = () => {
   const [reviewLoading, setReviewLoading] = useState(false);
   const [reviewError, setReviewError] = useState('');
   const [reviewSuccess, setReviewSuccess] = useState('');
+  const [remediationStatusByStudent, setRemediationStatusByStudent] = useState({});
   const [feedbackDrafts, setFeedbackDrafts] = useState({});
   const [markDrafts, setMarkDrafts] = useState({});
   const [savingFeedbackId, setSavingFeedbackId] = useState(null);
@@ -386,6 +387,38 @@ const TeacherDashboard = () => {
       setReviewError(err.response?.data?.message || 'Unable to save mark');
     } finally {
       setSavingMarkId(null);
+    }
+  };
+
+  const handleAssignRemediation = async (student) => {
+    const studentId = student?.id;
+    if (!studentId) return;
+
+    setRemediationStatusByStudent((prev) => ({
+      ...prev,
+      [studentId]: { loading: true, message: '' },
+    }));
+
+    try {
+      await apiClient.post('/assignments/remediation', {
+        studentId,
+        dueInDays: 7,
+      });
+
+      setRemediationStatusByStudent((prev) => ({
+        ...prev,
+        [studentId]: { loading: false, message: 'Remediation assigned' },
+      }));
+
+      await refreshDashboard();
+    } catch (err) {
+      setRemediationStatusByStudent((prev) => ({
+        ...prev,
+        [studentId]: {
+          loading: false,
+          message: err.response?.data?.message || 'Unable to assign remediation',
+        },
+      }));
     }
   };
 
@@ -1554,6 +1587,19 @@ const TeacherDashboard = () => {
                   <span className={`badge ${student.isAtRisk ? '' : 'badge-muted'}`}>
                     {student.isAtRisk ? 'At Risk' : 'On Track'}
                   </span>
+                  {student.isAtRisk && (
+                    <button
+                      className="btn btn-secondary btn-spaced-bottom"
+                      type="button"
+                      onClick={() => handleAssignRemediation(student)}
+                      disabled={remediationStatusByStudent[student.id]?.loading}
+                    >
+                      {remediationStatusByStudent[student.id]?.loading ? 'Assigning...' : 'Assign Easy Remediation'}
+                    </button>
+                  )}
+                  {remediationStatusByStudent[student.id]?.message && (
+                    <div className="section-subtitle">{remediationStatusByStudent[student.id].message}</div>
+                  )}
                 </div>
               </li>
             ))}

@@ -7,6 +7,7 @@ const Challenge = require('../models/Challenge');
 const Submission = require('../models/Submission');
 
 const isTeacherOrAdmin = (role) => role === 'teacher' || role === 'admin';
+const isAdmin = (role) => role === 'admin';
 
 router.get('/teacher/options', authenticate, async (req, res) => {
   try {
@@ -98,6 +99,75 @@ router.post('/', authenticate, async (req, res) => {
       .populate('assignedTo', 'firstName lastName email');
 
     return res.status(201).json({ message: 'Assignment created', assignment: populated });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+router.post('/remediation', authenticate, async (req, res) => {
+  try {
+    if (!isTeacherOrAdmin(req.user.role)) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const { studentId, courseId, dueInDays = 7 } = req.body;
+
+    if (!studentId) {
+      return res.status(400).json({ message: 'studentId is required' });
+    }
+
+    const teacherCourseFilter = isAdmin(req.user.role)
+      ? {}
+      : { instructor: req.user.userId };
+
+    const candidateCourses = await Course.find(teacherCourseFilter)
+      .populate('challenges', 'title difficulty')
+      .populate('enrolledStudents', '_id');
+
+    const eligibleCourses = candidateCourses.filter((course) =>
+      course.enrolledStudents.some((student) => student._id.toString() === studentId)
+    );
+
+    if (!eligibleCourses.length) {
+      return res.status(404).json({ message: 'No eligible course found for this student' });
+    }
+
+    const selectedCourse = courseId
+      ? eligibleCourses.find((course) => course._id.toString() === courseId)
+      : eligibleCourses[0];
+
+    if (!selectedCourse) {
+      return res.status(404).json({ message: 'Selected course is not eligible for remediation assignment' });
+    }
+
+    const easyChallenge = selectedCourse.challenges.find((challenge) => challenge.difficulty === 'easy');
+    const fallbackChallenge = selectedCourse.challenges[0];
+    const challenge = easyChallenge || fallbackChallenge;
+
+    if (!challenge) {
+      return res.status(400).json({ message: 'No challenge found in selected course for remediation assignment' });
+    }
+
+    const safeDueInDays = Math.max(1, Number(dueInDays) || 7);
+    const dueDate = new Date(Date.now() + safeDueInDays * 24 * 60 * 60 * 1000);
+
+    const assignment = await Assignment.create({
+      title: `Remediation: ${challenge.title}`,
+      description: 'Targeted remediation assignment generated from student risk/adaptive profile.',
+      course: selectedCourse._id,
+      challenge: challenge._id,
+      teacher: req.user.userId,
+      assignedTo: [studentId],
+      dueDate,
+      isPublished: true,
+    });
+
+    const populated = await Assignment.findById(assignment._id)
+      .populate('course', 'title')
+      .populate('challenge', 'title difficulty')
+      .populate('assignedTo', 'firstName lastName email');
+
+    return res.status(201).json({ message: 'Remediation assignment created', assignment: populated });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
