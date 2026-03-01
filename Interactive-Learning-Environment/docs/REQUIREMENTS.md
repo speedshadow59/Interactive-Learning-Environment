@@ -106,7 +106,12 @@
 | FR24 Progress report export | ✅ | `GET /dashboard/teacher/export.csv`, Teacher dashboard Export button |
 | FR25 Teacher feedback on submissions | ✅ | `PATCH /submissions/:id/feedback`, `GET /submissions/course/:courseId` in `backend/src/routes/submissionRoutes.js` |
 | FR26 Performance/completion trends | ✅ | Per-course pass rate and completion metrics in `GET /dashboard/teacher/analytics` |
+| FR27 Adaptive challenge recommendation | ✅ | Student adaptive recommendations in `GET /dashboard/student`, rendered in `frontend/src/pages/StudentDashboard.js` |
+| FR28 Dynamic difficulty adaptation | ✅ | Target difficulty derived from recent performance in `backend/src/routes/dashboardRoutes.js` adaptive profile |
+| FR29 Learning path adjustment | ✅ | Adaptive profile + reasoned recommendations in `GET /dashboard/student` and Student dashboard adaptive sections |
+| FR30 Struggling student identification/intervention | ✅ | Teacher roster risk signals + adaptive intervention hints in `GET /dashboard/teacher` and `frontend/src/pages/TeacherDashboard.js` |
 | Objective 3 Assignment workflow with deadlines | ✅ | `backend/src/models/Assignment.js`, `backend/src/routes/assignmentRoutes.js`, `frontend/src/pages/TeacherDashboard.js`, `frontend/src/pages/StudentDashboard.js` |
+| Teacher challenge management workflow | ✅ | `POST/PATCH/DELETE /api/challenges` in `backend/src/routes/challengeRoutes.js`, forms in `frontend/src/pages/TeacherDashboard.js` |
 | NFR5-NFR6 Auth security | ✅ | bcrypt hashing + JWT in auth controller and middleware |
 | NFR8-NFR9 Input sanitization + RBAC | ✅ | `backend/src/middleware/errorHandler.js`, role checks across routes |
 | NFR11 Accessibility WCAG 2.1 AA | ✅ | `frontend/src/components/AccessibilityPanel.js`, `frontend/src/styles/Accessibility.css` |
