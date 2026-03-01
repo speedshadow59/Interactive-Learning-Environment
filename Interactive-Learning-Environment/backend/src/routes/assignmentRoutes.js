@@ -15,7 +15,7 @@ router.get('/teacher/options', authenticate, async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    const courseFilter = isTeacherOrAdmin(req.user.role)
+    const courseFilter = isAdmin(req.user.role)
       ? {}
       : { instructor: req.user.userId };
 
@@ -175,7 +175,7 @@ router.get('/teacher', authenticate, async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    const assignmentFilter = isTeacherOrAdmin(req.user.role) ? {} : { teacher: req.user.userId };
+    const assignmentFilter = isAdmin(req.user.role) ? {} : { teacher: req.user.userId };
 
     const assignments = await Assignment.find(assignmentFilter)
       .sort({ dueDate: 1 })

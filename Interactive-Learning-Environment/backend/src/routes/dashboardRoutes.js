@@ -18,6 +18,7 @@ const { calculateLevelFromExperience } = require('../utils/progression');
 
 // Shared authorization helper for analytics/reporting endpoints.
 const isTeacherOrAdmin = (role) => role === 'teacher' || role === 'admin';
+const isAdmin = (role) => role === 'admin';
 
 const escapeCsv = (value) => {
   const safeValue = value === null || value === undefined ? '' : String(value);
@@ -32,7 +33,7 @@ const parseBoolean = (value) => {
 
 // Builds enriched roster rows (risk, activity, assignment state) for teacher UI filters.
 const buildTeacherRoster = async (teacherId, role, filters = {}) => {
-  const baseCourseFilter = isTeacherOrAdmin(role) ? {} : { instructor: teacherId };
+  const baseCourseFilter = isAdmin(role) ? {} : { instructor: teacherId };
   const allCourses = await Course.find(baseCourseFilter, 'title');
 
   const courseFilter = { ...baseCourseFilter };
@@ -321,7 +322,7 @@ const buildTeacherRoster = async (teacherId, role, filters = {}) => {
 
 // Builds KPI-style analytics cards and course-level distribution data.
 const buildTeacherAnalytics = async (teacherId, role) => {
-  const courseFilter = isTeacherOrAdmin(role) ? {} : { instructor: teacherId };
+  const courseFilter = isAdmin(role) ? {} : { instructor: teacherId };
   const courses = await Course.find(courseFilter)
     .populate('enrolledStudents', 'firstName lastName email');
 
@@ -422,7 +423,7 @@ router.get('/teacher', authenticate, async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    const courseFilter = isTeacherOrAdmin(req.user.role) ? {} : { instructor: req.user.userId };
+    const courseFilter = isAdmin(req.user.role) ? {} : { instructor: req.user.userId };
     if (req.query.courseId) {
       courseFilter._id = req.query.courseId;
     }
