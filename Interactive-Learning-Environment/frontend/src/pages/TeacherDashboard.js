@@ -11,11 +11,14 @@ const TeacherDashboard = () => {
   const [error, setError] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showChallengeForm, setShowChallengeForm] = useState(false);
+  const [showEditChallengeForm, setShowEditChallengeForm] = useState(false);
   const [showAssignmentForm, setShowAssignmentForm] = useState(false);
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
   const [challengeError, setChallengeError] = useState('');
   const [challengeSuccess, setChallengeSuccess] = useState('');
+  const [editChallengeError, setEditChallengeError] = useState('');
+  const [editChallengeSuccess, setEditChallengeSuccess] = useState('');
   const [assignmentError, setAssignmentError] = useState('');
   const [assignmentSuccess, setAssignmentSuccess] = useState('');
   const [reviewCourseId, setReviewCourseId] = useState('');
@@ -36,6 +39,7 @@ const TeacherDashboard = () => {
   const [rosterLoading, setRosterLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submittingChallenge, setSubmittingChallenge] = useState(false);
+  const [submittingChallengeEdit, setSubmittingChallengeEdit] = useState(false);
   const [submittingAssignment, setSubmittingAssignment] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -57,6 +61,20 @@ const TeacherDashboard = () => {
     title: '',
     description: '',
     courseId: '',
+    difficulty: 'easy',
+    instructions: '',
+    initialCode: '',
+    objectivesText: '',
+    hintsText: '',
+    expectedOutput: '',
+    gamificationPoints: 100,
+    isBlockBased: true,
+  });
+  const [editChallengeCourseId, setEditChallengeCourseId] = useState('');
+  const [editChallengeId, setEditChallengeId] = useState('');
+  const [challengeEditForm, setChallengeEditForm] = useState({
+    title: '',
+    description: '',
     difficulty: 'easy',
     instructions: '',
     initialCode: '',
@@ -165,6 +183,7 @@ const TeacherDashboard = () => {
   };
 
   const selectedCourseOption = assignmentOptions.find((course) => course.id === assignmentForm.courseId);
+  const selectedEditCourseOption = assignmentOptions.find((course) => course.id === editChallengeCourseId);
 
   const assignmentCounts = useMemo(
     () => assignmentData.reduce(
@@ -580,6 +599,121 @@ const TeacherDashboard = () => {
     }
   };
 
+  const handleEditChallengeCourseChange = (event) => {
+    const courseId = event.target.value;
+    setEditChallengeCourseId(courseId);
+    setEditChallengeId('');
+    setChallengeEditForm({
+      title: '',
+      description: '',
+      difficulty: 'easy',
+      instructions: '',
+      initialCode: '',
+      objectivesText: '',
+      hintsText: '',
+      expectedOutput: '',
+      gamificationPoints: 100,
+      isBlockBased: true,
+    });
+    setEditChallengeError('');
+    setEditChallengeSuccess('');
+  };
+
+  const handleEditChallengeSelect = async (event) => {
+    const challengeId = event.target.value;
+    setEditChallengeId(challengeId);
+    setEditChallengeError('');
+    setEditChallengeSuccess('');
+
+    if (!challengeId) return;
+
+    try {
+      const response = await apiClient.get(`/challenges/${challengeId}`);
+      const challenge = response.data;
+      const fallbackExpectedOutput =
+        challenge.expectedOutput ||
+        (Array.isArray(challenge.testCases) && challenge.testCases.length > 0
+          ? challenge.testCases[0].expectedOutput || ''
+          : '');
+
+      setChallengeEditForm({
+        title: challenge.title || '',
+        description: challenge.description || '',
+        difficulty: challenge.difficulty || 'easy',
+        instructions: challenge.instructions || '',
+        initialCode: challenge.initialCode || '',
+        objectivesText: (challenge.objectives || []).join('\n'),
+        hintsText: (challenge.hints || []).join('\n'),
+        expectedOutput: fallbackExpectedOutput,
+        gamificationPoints: challenge.gamificationPoints ?? 100,
+        isBlockBased: challenge.isBlockBased !== false,
+      });
+    } catch (err) {
+      setEditChallengeError(err.response?.data?.message || 'Unable to load challenge details');
+    }
+  };
+
+  const handleChallengeEditInputChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setChallengeEditForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleUpdateChallenge = async (event) => {
+    event.preventDefault();
+    setEditChallengeError('');
+    setEditChallengeSuccess('');
+
+    if (!editChallengeId) {
+      setEditChallengeError('Please select a challenge to edit.');
+      return;
+    }
+
+    if (!challengeEditForm.title || !challengeEditForm.description) {
+      setEditChallengeError('Title and description are required.');
+      return;
+    }
+
+    const objectives = challengeEditForm.objectivesText
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const hints = challengeEditForm.hintsText
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const payload = {
+      title: challengeEditForm.title,
+      description: challengeEditForm.description,
+      difficulty: challengeEditForm.difficulty,
+      instructions: challengeEditForm.instructions,
+      initialCode: challengeEditForm.initialCode,
+      objectives,
+      hints,
+      expectedOutput: challengeEditForm.expectedOutput || '',
+      gamificationPoints: Number(challengeEditForm.gamificationPoints) || 100,
+      isBlockBased: Boolean(challengeEditForm.isBlockBased),
+      testCases: challengeEditForm.expectedOutput
+        ? [{ input: '', expectedOutput: challengeEditForm.expectedOutput, description: 'Primary expected output' }]
+        : [],
+    };
+
+    setSubmittingChallengeEdit(true);
+    try {
+      await apiClient.patch(`/challenges/${editChallengeId}`, payload);
+      setEditChallengeSuccess('Challenge updated successfully.');
+      await refreshDashboard();
+    } catch (err) {
+      setEditChallengeError(err.response?.data?.message || 'Unable to update challenge');
+    } finally {
+      setSubmittingChallengeEdit(false);
+    }
+  };
+
   const handleExportCsv = async () => {
     try {
       const response = await apiClient.get('/dashboard/teacher/export.csv', {
@@ -616,6 +750,12 @@ const TeacherDashboard = () => {
             onClick={handleExportCsv}
           >
             Export CSV Report
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowEditChallengeForm(prev => !prev)}
+          >
+            {showEditChallengeForm ? 'Close Edit Challenge' : 'Edit Challenge'}
           </button>
           <button
             className="btn btn-secondary"
@@ -884,6 +1024,177 @@ const TeacherDashboard = () => {
             <div className="form-actions">
               <button className="btn btn-primary" type="submit" disabled={submittingChallenge}>
                 {submittingChallenge ? 'Creating...' : 'Create Challenge'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {showEditChallengeForm && (
+        <div className="section-card">
+          <div className="section-header">
+            <h2>Edit Challenge</h2>
+          </div>
+          {editChallengeError && <div className="error">{editChallengeError}</div>}
+          {editChallengeSuccess && <div className="success">{editChallengeSuccess}</div>}
+
+          <form className="dashboard-form" onSubmit={handleUpdateChallenge}>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="editChallengeCourse">Course</label>
+                <select
+                  id="editChallengeCourse"
+                  value={editChallengeCourseId}
+                  onChange={handleEditChallengeCourseChange}
+                  required
+                >
+                  <option value="">Select course</option>
+                  {(assignmentOptions || []).map((course) => (
+                    <option key={course.id} value={course.id}>{course.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="editChallengeId">Challenge</label>
+                <select
+                  id="editChallengeId"
+                  value={editChallengeId}
+                  onChange={handleEditChallengeSelect}
+                  disabled={!selectedEditCourseOption}
+                  required
+                >
+                  <option value="">Select challenge</option>
+                  {selectedEditCourseOption?.challenges?.map((challenge) => (
+                    <option key={challenge.id} value={challenge.id}>{challenge.title}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="editChallengeTitle">Title *</label>
+                <input
+                  id="editChallengeTitle"
+                  name="title"
+                  type="text"
+                  value={challengeEditForm.title}
+                  onChange={handleChallengeEditInputChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="editChallengeDifficulty">Difficulty</label>
+                <select
+                  id="editChallengeDifficulty"
+                  name="difficulty"
+                  value={challengeEditForm.difficulty}
+                  onChange={handleChallengeEditInputChange}
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="editChallengeDescription">Description *</label>
+              <textarea
+                id="editChallengeDescription"
+                name="description"
+                rows="3"
+                value={challengeEditForm.description}
+                onChange={handleChallengeEditInputChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="editChallengeInstructions">Instructions</label>
+              <textarea
+                id="editChallengeInstructions"
+                name="instructions"
+                rows="3"
+                value={challengeEditForm.instructions}
+                onChange={handleChallengeEditInputChange}
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="editChallengeObjectives">Objectives (one per line)</label>
+                <textarea
+                  id="editChallengeObjectives"
+                  name="objectivesText"
+                  rows="4"
+                  value={challengeEditForm.objectivesText}
+                  onChange={handleChallengeEditInputChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="editChallengeHints">Hints (one per line)</label>
+                <textarea
+                  id="editChallengeHints"
+                  name="hintsText"
+                  rows="4"
+                  value={challengeEditForm.hintsText}
+                  onChange={handleChallengeEditInputChange}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="editChallengeInitialCode">Initial Code Template</label>
+              <textarea
+                id="editChallengeInitialCode"
+                name="initialCode"
+                rows="5"
+                value={challengeEditForm.initialCode}
+                onChange={handleChallengeEditInputChange}
+                placeholder="// Starter code shown to students"
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="editChallengeExpectedOutput">Expected Output (optional)</label>
+                <input
+                  id="editChallengeExpectedOutput"
+                  name="expectedOutput"
+                  type="text"
+                  value={challengeEditForm.expectedOutput}
+                  onChange={handleChallengeEditInputChange}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="editChallengePoints">Points</label>
+                <input
+                  id="editChallengePoints"
+                  name="gamificationPoints"
+                  type="number"
+                  min="0"
+                  value={challengeEditForm.gamificationPoints}
+                  onChange={handleChallengeEditInputChange}
+                />
+              </div>
+            </div>
+
+            <div className="form-group form-toggle">
+              <label className="toggle-label">
+                <input
+                  type="checkbox"
+                  name="isBlockBased"
+                  checked={challengeEditForm.isBlockBased}
+                  onChange={handleChallengeEditInputChange}
+                />
+                <span>Enable Block Mode</span>
+              </label>
+            </div>
+
+            <div className="form-actions">
+              <button className="btn btn-primary" type="submit" disabled={submittingChallengeEdit || !editChallengeId}>
+                {submittingChallengeEdit ? 'Saving...' : 'Save Challenge Changes'}
               </button>
             </div>
           </form>
