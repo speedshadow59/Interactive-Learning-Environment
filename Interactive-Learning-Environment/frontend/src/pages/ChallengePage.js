@@ -12,6 +12,10 @@ const tutorPromptSuggestions = [
   'Give me a hint without giving the final answer.',
 ];
 
+const getApiErrorMessage = (err, fallbackMessage) => {
+  return err.response?.data?.message || fallbackMessage;
+};
+
 /*
   Challenge page flow:
   1) fetch challenge metadata
@@ -42,6 +46,8 @@ const ChallengePage = () => {
   const [error, setError] = useState('');
   const [showHints, setShowHints] = useState(false);
   const [useBlockMode, setUseBlockMode] = useState(true);
+
+  const canAskTutor = aiTutorInput.trim().length > 0 && !aiTutorLoading;
 
   // Converts visual blocks into executable source code.
   const buildCodeFromBlocks = () => {
@@ -102,7 +108,7 @@ const ChallengePage = () => {
           setBlocks([]);
         }
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load challenge');
+        setError(getApiErrorMessage(err, 'Failed to load challenge'));
       } finally {
         setLoading(false);
       }
@@ -146,10 +152,11 @@ const ChallengePage = () => {
         }
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Submission failed');
+      const message = getApiErrorMessage(err, 'Submission failed');
+      setError(message);
       setResult({
         success: false,
-        message: err.response?.data?.message || 'Submission failed'
+        message
       });
     } finally {
       setSubmitting(false);
@@ -210,7 +217,7 @@ const ChallengePage = () => {
         nextSteps: response.data?.nextSteps || [],
       });
     } catch (err) {
-      setAiHintError(err.response?.data?.message || 'Unable to generate AI hint right now.');
+      setAiHintError(getApiErrorMessage(err, 'Unable to generate AI hint right now.'));
     } finally {
       setAiHintLoading(false);
     }
@@ -249,7 +256,7 @@ const ChallengePage = () => {
       if (err.response?.data?.usage) {
         setAiTutorUsage(err.response.data.usage);
       }
-      setAiTutorError(err.response?.data?.message || 'Failed to get AI tutor response.');
+      setAiTutorError(getApiErrorMessage(err, 'Failed to get AI tutor response.'));
     } finally {
       setAiTutorLoading(false);
     }
@@ -522,7 +529,7 @@ const ChallengePage = () => {
               className="btn btn-primary"
               type="button"
               onClick={handleAskAiTutor}
-              disabled={aiTutorLoading}
+              disabled={!canAskTutor}
             >
               {aiTutorLoading ? 'Thinking...' : 'Ask Tutor'}
             </button>

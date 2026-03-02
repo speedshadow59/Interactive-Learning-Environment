@@ -11,8 +11,13 @@ const DAILY_TUTOR_LIMIT = Number(process.env.AI_TUTOR_DAILY_LIMIT || 40);
 const TUTOR_COOLDOWN_MS = Number(process.env.AI_TUTOR_COOLDOWN_MS || 2000);
 const tutorUsageByStudent = new Map();
 
+const buildUsagePayload = (count, cooldownMs = undefined) => ({
+  remainingToday: Math.max(DAILY_TUTOR_LIMIT - count, 0),
+  dailyLimit: DAILY_TUTOR_LIMIT,
+  ...(typeof cooldownMs === 'number' ? { cooldownMs } : {}),
+});
+
 const getUsageRecord = (studentId) => {
-  const now = Date.now();
   const currentDay = new Date().toISOString().slice(0, 10);
   const existing = tutorUsageByStudent.get(studentId);
 
@@ -24,16 +29,6 @@ const getUsageRecord = (studentId) => {
     };
     tutorUsageByStudent.set(studentId, fresh);
     return fresh;
-  }
-
-  if (now - existing.lastRequestAt > 7 * 24 * 60 * 60 * 1000) {
-    const refreshed = {
-      day: currentDay,
-      count: existing.day === currentDay ? existing.count : 0,
-      lastRequestAt: existing.lastRequestAt,
-    };
-    tutorUsageByStudent.set(studentId, refreshed);
-    return refreshed;
   }
 
   return existing;
@@ -68,21 +63,14 @@ router.post('/tutor-assist', authenticate, async (req, res) => {
     if (usage.count >= DAILY_TUTOR_LIMIT) {
       return res.status(429).json({
         message: 'Daily AI tutor limit reached. Please continue tomorrow or ask your teacher for support.',
-        usage: {
-          remainingToday: 0,
-          dailyLimit: DAILY_TUTOR_LIMIT,
-        },
+        usage: buildUsagePayload(usage.count),
       });
     }
 
     if (usage.lastRequestAt && now - usage.lastRequestAt < TUTOR_COOLDOWN_MS) {
       return res.status(429).json({
         message: 'Please wait a moment before sending another tutor request.',
-        usage: {
-          remainingToday: Math.max(DAILY_TUTOR_LIMIT - usage.count, 0),
-          dailyLimit: DAILY_TUTOR_LIMIT,
-          cooldownMs: TUTOR_COOLDOWN_MS - (now - usage.lastRequestAt),
-        },
+        usage: buildUsagePayload(usage.count, TUTOR_COOLDOWN_MS - (now - usage.lastRequestAt)),
       });
     }
 
@@ -115,10 +103,7 @@ router.post('/tutor-assist', authenticate, async (req, res) => {
 
     return res.json({
       ...aiResponse,
-      usage: {
-        remainingToday: Math.max(DAILY_TUTOR_LIMIT - usage.count, 0),
-        dailyLimit: DAILY_TUTOR_LIMIT,
-      },
+      usage: buildUsagePayload(usage.count),
     });
   } catch (error) {
     return res.status(500).json({

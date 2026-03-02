@@ -48,6 +48,19 @@ Updated: 2026-03-02
 - `FR29` adaptive learning path adjustment: implemented via adaptive profile and recommendation reasons.
 - `FR30` identify struggling students: implemented via teacher roster at-risk signals and filters.
 
+## Final Requirement Check (AT2)
+
+- Functional scope (`FR1`-`FR30`): implemented in current build.
+- Core security and reliability (`NFR5`, `NFR6`, `NFR8`, `NFR9`, `NFR17`, `NFR18`): implemented via auth, RBAC, sanitization, and centralized error middleware.
+- Accessibility baseline (`NFR11`, `NFR13`): implemented via accessibility panel, keyboard support, and clear API/UI error messaging.
+- AI tutor support: available in real-time chat with configurable provider mode (`auto`/`free`) and safe fallback behavior.
+
+### Final Remaining Items for Submission Pack
+
+- Add user testing evidence (2 rounds) with findings and refinement outcomes.
+- Add accessibility audit artifacts (tool output + manual checklist evidence).
+- Add performance/security evidence snapshots (API timing, RBAC/auth checks).
+
 ## Remaining AT2 Evidence (Non-Code Artifacts)
 
 These are not purely code changes and still require your assessment evidence pack:
