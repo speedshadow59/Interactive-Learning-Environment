@@ -1,4 +1,5 @@
 const MAX_HISTORY_MESSAGES = 6;
+const { generateStudentHint } = require('./aiAssistantService');
 
 const getClient = () => {
   if (!process.env.OPENAI_API_KEY) {
@@ -61,27 +62,61 @@ const normalizeHistory = (history = []) => {
     }));
 };
 
+const buildFreeTutorResponse = ({ challenge, message, draftCode, latestResult }) => {
+  const hintData = generateStudentHint({
+    challenge,
+    latestSubmission: latestResult ? { result: latestResult } : null,
+    draftCode,
+  });
+
+  const responseParts = [
+    `You asked: "${message}"`,
+    hintData.suggestion,
+    'Try this next:',
+    ...hintData.nextSteps.map((step, index) => `${index + 1}. ${step}`),
+  ];
+
+  return {
+    configured: true,
+    provider: 'free',
+    model: 'local-free-tutor',
+    reply: responseParts.join(' '),
+  };
+};
+
 const getRealtimeTutorResponse = async ({ challenge, message, draftCode, language, latestResult, history }) => {
+  const tutorMode = `${process.env.AI_TUTOR_MODE || 'auto'}`.toLowerCase();
   const client = getClient();
-
-  if (!client) {
-    return {
-      configured: false,
-      reply: 'Real AI tutor is not configured yet. Add OPENAI_API_KEY (and optional OPENAI_MODEL) in backend environment variables.',
-      model: null,
-    };
-  }
-
-  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
   const safeMessage = `${message || ''}`.trim().slice(0, 1200);
 
   if (!safeMessage) {
     return {
       configured: true,
+      provider: 'free',
+      model: 'local-free-tutor',
       reply: 'Ask a specific question about your code, output, or challenge requirement.',
-      model,
     };
   }
+
+  if (tutorMode === 'free') {
+    return buildFreeTutorResponse({
+      challenge,
+      message: safeMessage,
+      draftCode,
+      latestResult,
+    });
+  }
+
+  if (!client) {
+    return buildFreeTutorResponse({
+      challenge,
+      message: safeMessage,
+      draftCode,
+      latestResult,
+    });
+  }
+
+  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
   const messages = [
     { role: 'system', content: buildSystemPrompt() },
@@ -90,19 +125,35 @@ const getRealtimeTutorResponse = async ({ challenge, message, draftCode, languag
     { role: 'user', content: safeMessage },
   ];
 
-  const completion = await client.chat.completions.create({
-    model,
-    temperature: 0.3,
-    messages,
-  });
+  try {
+    const completion = await client.chat.completions.create({
+      model,
+      temperature: 0.3,
+      messages,
+    });
 
-  const reply = completion.choices?.[0]?.message?.content?.trim();
+    const reply = completion.choices?.[0]?.message?.content?.trim();
 
-  return {
-    configured: true,
-    reply: reply || 'I could not generate a response just now. Please try rephrasing your question.',
-    model,
-  };
+    return {
+      configured: true,
+      provider: 'openai',
+      reply: reply || 'I could not generate a response just now. Please try rephrasing your question.',
+      model,
+    };
+  } catch (error) {
+    const fallback = buildFreeTutorResponse({
+      challenge,
+      message: safeMessage,
+      draftCode,
+      latestResult,
+    });
+
+    return {
+      ...fallback,
+      provider: 'free-fallback',
+      fallbackReason: error.message,
+    };
+  }
 };
 
 module.exports = {
