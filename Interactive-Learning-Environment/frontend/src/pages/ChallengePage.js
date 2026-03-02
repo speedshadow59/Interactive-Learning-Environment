@@ -27,6 +27,10 @@ const ChallengePage = () => {
   const [aiHint, setAiHint] = useState(null);
   const [aiHintLoading, setAiHintLoading] = useState(false);
   const [aiHintError, setAiHintError] = useState('');
+  const [aiTutorMessages, setAiTutorMessages] = useState([]);
+  const [aiTutorInput, setAiTutorInput] = useState('');
+  const [aiTutorLoading, setAiTutorLoading] = useState(false);
+  const [aiTutorError, setAiTutorError] = useState('');
   const [error, setError] = useState('');
   const [showHints, setShowHints] = useState(false);
   const [useBlockMode, setUseBlockMode] = useState(true);
@@ -201,6 +205,39 @@ const ChallengePage = () => {
       setAiHintError(err.response?.data?.message || 'Unable to generate AI hint right now.');
     } finally {
       setAiHintLoading(false);
+    }
+  };
+
+  const handleAskAiTutor = async () => {
+    const userMessage = aiTutorInput.trim();
+    if (!userMessage) return;
+
+    const nextMessages = [...aiTutorMessages, { role: 'user', content: userMessage }];
+    setAiTutorMessages(nextMessages);
+    setAiTutorInput('');
+    setAiTutorLoading(true);
+    setAiTutorError('');
+
+    try {
+      const response = await apiClient.post('/ai/tutor-assist', {
+        challengeId: id,
+        message: userMessage,
+        draftCode: buildSubmissionCode(),
+        language,
+        history: nextMessages.slice(-6),
+      });
+
+      const assistantMessage = {
+        role: 'assistant',
+        content: response.data?.reply || 'No response from tutor.',
+        model: response.data?.model || null,
+      };
+
+      setAiTutorMessages((prev) => [...prev, assistantMessage]);
+    } catch (err) {
+      setAiTutorError(err.response?.data?.message || 'Failed to get AI tutor response.');
+    } finally {
+      setAiTutorLoading(false);
     }
   };
 
@@ -383,6 +420,45 @@ const ChallengePage = () => {
             )}
           </div>
         )}
+
+        <div className="challenge-section challenge-ai-panel">
+          <h2>Real-time AI Tutor</h2>
+          <p>Ask questions about your current code and challenge requirements.</p>
+
+          <div className="ai-tutor-chat-log">
+            {aiTutorMessages.length > 0 ? (
+              aiTutorMessages.map((msg, index) => (
+                <div key={`${msg.role}-${index}`} className={`ai-tutor-message ai-tutor-message--${msg.role}`}>
+                  <strong>{msg.role === 'user' ? 'You' : 'Tutor'}:</strong> {msg.content}
+                  {msg.role === 'assistant' && msg.model && (
+                    <div className="section-subtitle">Model: {msg.model}</div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="empty-state">No conversation yet. Ask your first question.</p>
+            )}
+          </div>
+
+          <div className="ai-tutor-input-row">
+            <input
+              type="text"
+              value={aiTutorInput}
+              onChange={(event) => setAiTutorInput(event.target.value)}
+              placeholder="e.g. Why does my loop miss the last item?"
+            />
+            <button
+              className="btn btn-primary"
+              type="button"
+              onClick={handleAskAiTutor}
+              disabled={aiTutorLoading}
+            >
+              {aiTutorLoading ? 'Thinking...' : 'Ask Tutor'}
+            </button>
+          </div>
+
+          {aiTutorError && <div className="error">{aiTutorError}</div>}
+        </div>
 
         {result && (
           <div className={`submission-result ${result.success ? 'success' : 'error'}`}>

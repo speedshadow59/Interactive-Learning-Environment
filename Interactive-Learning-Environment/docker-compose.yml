@@ -25,6 +25,8 @@ services:
       MONGODB_URI: mongodb://admin:password@mongodb:27017/interactive-learning-env?authSource=admin
       JWT_SECRET: your-secret-key-change-in-production
       JWT_EXPIRES_IN: 7d
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
     depends_on:
       - mongodb
     volumes:

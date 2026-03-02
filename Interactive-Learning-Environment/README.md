@@ -113,6 +113,7 @@ The application will be available at `http://localhost:3000`
 ### For Students
 - Visual block-based programming editor
 - Interactive coding challenges with instant feedback
+- Real-time AI tutor chat for contextual coding help
 - Gamification system (points, badges, achievements)
 - Progress tracking
 - Collaborative learning features

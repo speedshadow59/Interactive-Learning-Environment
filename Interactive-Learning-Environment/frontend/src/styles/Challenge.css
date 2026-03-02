@@ -259,6 +259,37 @@
   margin-top: 18px;
 }
 
+.ai-tutor-chat-log {
+  border: 1px solid #dbe3f5;
+  border-radius: 10px;
+  padding: 12px;
+  max-height: 220px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+.ai-tutor-message {
+  margin-bottom: 10px;
+  line-height: 1.45;
+}
+
+.ai-tutor-message:last-child {
+  margin-bottom: 0;
+}
+
+.ai-tutor-input-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.ai-tutor-input-row input {
+  flex: 1;
+  border: 1px solid #dbe3f5;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
 .challenge-editor {
   background: white;
   border: 1px solid #dbe3f5;

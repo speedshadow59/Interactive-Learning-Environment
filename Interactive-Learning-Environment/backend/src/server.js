@@ -48,6 +48,7 @@ app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/badges', require('./routes/badgeRoutes'));
 app.use('/api/privacy', require('./routes/privacyRoutes')); // GDPR compliance endpoints
 app.use('/api/execute', require('./routes/executeRoutes'));
+app.use('/api/ai', require('./routes/aiRoutes'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
