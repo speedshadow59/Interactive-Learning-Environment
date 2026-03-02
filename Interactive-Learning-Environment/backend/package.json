@@ -9,7 +9,8 @@
     "test": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "eslint src/**/*.js",
-    "backfill:enrollments": "node src/scripts/backfillEnrollments.js"
+    "backfill:enrollments": "node src/scripts/backfillEnrollments.js",
+    "create:admin": "node src/scripts/createAdminAccount.js"
   },
   "keywords": [
     "education",

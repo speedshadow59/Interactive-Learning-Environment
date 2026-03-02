@@ -8,6 +8,7 @@ const Progress = require('../models/Progress');
 const Assignment = require('../models/Assignment');
 const Challenge = require('../models/Challenge');
 const { calculateLevelFromExperience } = require('../utils/progression');
+const { generateTeacherInterventionSummary } = require('../services/aiAssistantService');
 
 /*
   Dashboard routes aggregate student/teacher insights:
@@ -475,6 +476,28 @@ router.get('/teacher/analytics', authenticate, async (req, res) => {
 
     const analytics = await buildTeacherAnalytics(req.user.userId, req.user.role);
     return res.json(analytics);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+router.get('/teacher/ai-summary', authenticate, async (req, res) => {
+  try {
+    if (!isTeacherOrAdmin(req.user.role)) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const rosterData = await buildTeacherRoster(req.user.userId, req.user.role, {
+      courseId: req.query.courseId,
+      yearGroup: req.query.yearGroup,
+      riskOnly: req.query.riskOnly,
+    });
+
+    const summary = generateTeacherInterventionSummary({
+      roster: rosterData.roster,
+    });
+
+    return res.json(summary);
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

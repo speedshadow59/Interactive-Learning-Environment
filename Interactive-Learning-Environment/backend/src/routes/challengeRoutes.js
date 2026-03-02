@@ -3,7 +3,9 @@ const router = express.Router();
 const Challenge = require('../models/Challenge');
 const Course = require('../models/Course');
 const Assignment = require('../models/Assignment');
+const Submission = require('../models/Submission');
 const { authenticate } = require('../middleware/authMiddleware');
+const { generateStudentHint } = require('../services/aiAssistantService');
 
 // Get all challenges for a course
 router.get('/course/:courseId', async (req, res) => {
@@ -26,6 +28,39 @@ router.get('/:id', async (req, res) => {
     res.json(challenge);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+router.post('/:id/ai-hint', authenticate, async (req, res) => {
+  try {
+    if (req.user.role !== 'student') {
+      return res.status(403).json({ message: 'Only students can request AI hints' });
+    }
+
+    const challenge = await Challenge.findById(req.params.id);
+    if (!challenge) {
+      return res.status(404).json({ message: 'Challenge not found' });
+    }
+
+    const latestSubmission = await Submission.findOne({
+      student: req.user.userId,
+      challenge: challenge._id,
+    })
+      .sort({ submittedAt: -1 })
+      .select('result submittedAt');
+
+    const hintData = generateStudentHint({
+      challenge,
+      latestSubmission,
+      draftCode: req.body?.draftCode || '',
+    });
+
+    return res.json({
+      message: 'AI hint generated',
+      ...hintData,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 });
 

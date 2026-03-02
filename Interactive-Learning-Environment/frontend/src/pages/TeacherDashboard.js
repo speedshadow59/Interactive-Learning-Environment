@@ -5,6 +5,7 @@ import '../styles/Dashboard.css';
 const TeacherDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [teacherAnalytics, setTeacherAnalytics] = useState(null);
+  const [teacherAiSummary, setTeacherAiSummary] = useState(null);
   const [assignmentData, setAssignmentData] = useState([]);
   const [assignmentOptions, setAssignmentOptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +40,7 @@ const TeacherDashboard = () => {
   const [remediationDueInDays, setRemediationDueInDays] = useState('7');
   const [assignmentFilter, setAssignmentFilter] = useState('all');
   const [rosterLoading, setRosterLoading] = useState(false);
+  const [aiSummaryLoading, setAiSummaryLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submittingChallenge, setSubmittingChallenge] = useState(false);
   const [submittingChallengeEdit, setSubmittingChallengeEdit] = useState(false);
@@ -108,16 +110,18 @@ const TeacherDashboard = () => {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const [dashboardResponse, assignmentsResponse, optionsResponse, analyticsResponse] = await Promise.all([
+        const [dashboardResponse, assignmentsResponse, optionsResponse, analyticsResponse, aiSummaryResponse] = await Promise.all([
           apiClient.get(buildDashboardUrl()),
           apiClient.get('/assignments/teacher'),
           apiClient.get('/assignments/teacher/options'),
-          apiClient.get('/dashboard/teacher/analytics')
+          apiClient.get('/dashboard/teacher/analytics'),
+          apiClient.get('/dashboard/teacher/ai-summary')
         ]);
         setDashboardData(dashboardResponse.data);
         setAssignmentData(assignmentsResponse.data?.assignments || []);
         setAssignmentOptions(optionsResponse.data?.courses || []);
         setTeacherAnalytics(analyticsResponse.data);
+        setTeacherAiSummary(aiSummaryResponse.data);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load dashboard');
       } finally {
@@ -129,7 +133,7 @@ const TeacherDashboard = () => {
   }, []);
 
   const refreshDashboard = async () => {
-    const [dashboardResponse, assignmentsResponse, optionsResponse, analyticsResponse] = await Promise.all([
+    const [dashboardResponse, assignmentsResponse, optionsResponse, analyticsResponse, aiSummaryResponse] = await Promise.all([
       apiClient.get(
         buildDashboardUrl({
           courseId: rosterFilterCourseId,
@@ -139,32 +143,50 @@ const TeacherDashboard = () => {
       ),
       apiClient.get('/assignments/teacher'),
       apiClient.get('/assignments/teacher/options'),
-      apiClient.get('/dashboard/teacher/analytics')
+      apiClient.get('/dashboard/teacher/analytics'),
+      apiClient.get(`/dashboard/teacher/ai-summary?${new URLSearchParams({
+        ...(rosterFilterCourseId ? { courseId: rosterFilterCourseId } : {}),
+        ...(rosterFilterYearGroup ? { yearGroup: rosterFilterYearGroup } : {}),
+        ...(rosterRiskOnly ? { riskOnly: 'true' } : {}),
+      }).toString()}`)
     ]);
 
     setDashboardData(dashboardResponse.data);
     setAssignmentData(assignmentsResponse.data?.assignments || []);
     setAssignmentOptions(optionsResponse.data?.courses || []);
     setTeacherAnalytics(analyticsResponse.data);
+    setTeacherAiSummary(aiSummaryResponse.data);
   };
 
   const handleApplyRosterFilters = async () => {
     setRosterLoading(true);
+    setAiSummaryLoading(true);
     setError('');
 
     try {
-      const response = await apiClient.get(
+      const query = new URLSearchParams({
+        ...(rosterFilterCourseId ? { courseId: rosterFilterCourseId } : {}),
+        ...(rosterFilterYearGroup ? { yearGroup: rosterFilterYearGroup } : {}),
+        ...(rosterRiskOnly ? { riskOnly: 'true' } : {}),
+      }).toString();
+
+      const [response, aiSummaryResponse] = await Promise.all([
+        apiClient.get(
         buildDashboardUrl({
           courseId: rosterFilterCourseId,
           yearGroup: rosterFilterYearGroup,
           riskOnly: rosterRiskOnly,
         })
-      );
+        ),
+        apiClient.get(query ? `/dashboard/teacher/ai-summary?${query}` : '/dashboard/teacher/ai-summary')
+      ]);
       setDashboardData(response.data);
+      setTeacherAiSummary(aiSummaryResponse.data);
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to apply roster filters');
     } finally {
       setRosterLoading(false);
+      setAiSummaryLoading(false);
     }
   };
 
@@ -173,15 +195,21 @@ const TeacherDashboard = () => {
     setRosterFilterYearGroup('');
     setRosterRiskOnly(false);
     setRosterLoading(true);
+    setAiSummaryLoading(true);
     setError('');
 
     try {
-      const response = await apiClient.get('/dashboard/teacher');
+      const [response, aiSummaryResponse] = await Promise.all([
+        apiClient.get('/dashboard/teacher'),
+        apiClient.get('/dashboard/teacher/ai-summary')
+      ]);
       setDashboardData(response.data);
+      setTeacherAiSummary(aiSummaryResponse.data);
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to reset roster filters');
     } finally {
       setRosterLoading(false);
+      setAiSummaryLoading(false);
     }
   };
 
@@ -1427,6 +1455,41 @@ const TeacherDashboard = () => {
             <strong>{teacherAnalytics?.summary?.overdueAssignments || 0}</strong>
           </li>
         </ul>
+      </div>
+
+      <div className="section-card">
+        <div className="section-header">
+          <h2>AI Intervention Summary</h2>
+          <span className="section-subtitle">Targeted actions generated from live roster signals</span>
+        </div>
+
+        {aiSummaryLoading ? (
+          <p className="empty-state">Generating AI summary...</p>
+        ) : (
+          <>
+            <p>{teacherAiSummary?.headline || 'No AI summary available yet.'}</p>
+            <ul className="progress-list progress-list--compact">
+              {(teacherAiSummary?.actions || []).map((action, index) => (
+                <li key={`${action}-${index}`}>
+                  <span>{action}</span>
+                </li>
+              ))}
+            </ul>
+            {teacherAiSummary?.priorityStudents?.length > 0 && (
+              <ul className="progress-list">
+                {teacherAiSummary.priorityStudents.map((student) => (
+                  <li key={student.id}>
+                    <div>
+                      <strong>{student.name}</strong>
+                      <div>{student.reason}</div>
+                      <div className="section-subtitle">{student.recommendation}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
       </div>
 
       <div className="section-card">

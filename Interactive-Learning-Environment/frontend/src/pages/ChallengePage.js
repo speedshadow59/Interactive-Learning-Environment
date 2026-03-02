@@ -24,6 +24,9 @@ const ChallengePage = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
+  const [aiHint, setAiHint] = useState(null);
+  const [aiHintLoading, setAiHintLoading] = useState(false);
+  const [aiHintError, setAiHintError] = useState('');
   const [error, setError] = useState('');
   const [showHints, setShowHints] = useState(false);
   const [useBlockMode, setUseBlockMode] = useState(true);
@@ -181,6 +184,26 @@ const ChallengePage = () => {
     }
   };
 
+  const handleGetAiHint = async () => {
+    setAiHintLoading(true);
+    setAiHintError('');
+
+    try {
+      const response = await apiClient.post(`/challenges/${id}/ai-hint`, {
+        draftCode: buildSubmissionCode(),
+      });
+
+      setAiHint({
+        suggestion: response.data?.suggestion || '',
+        nextSteps: response.data?.nextSteps || [],
+      });
+    } catch (err) {
+      setAiHintError(err.response?.data?.message || 'Unable to generate AI hint right now.');
+    } finally {
+      setAiHintLoading(false);
+    }
+  };
+
   if (loading) return <div className="loading">Loading challenge...</div>;
   if (error && !challenge) return <div className="error">{error}</div>;
 
@@ -326,6 +349,14 @@ const ChallengePage = () => {
             Run Code
           </button>
           <button
+            className="btn btn-secondary"
+            onClick={handleGetAiHint}
+            disabled={submitting || aiHintLoading}
+            type="button"
+          >
+            {aiHintLoading ? 'Generating Hint...' : 'Get AI Hint'}
+          </button>
+          <button
             className="btn btn-primary"
             onClick={handleSubmit}
             disabled={submitting}
@@ -333,6 +364,25 @@ const ChallengePage = () => {
             {submitting ? 'Submitting...' : 'Submit Solution'}
           </button>
         </div>
+
+        {aiHintError && <div className="error">{aiHintError}</div>}
+
+        {aiHint?.suggestion && (
+          <div className="challenge-section challenge-ai-panel">
+            <h2>AI Tutor Suggestion</h2>
+            <div className="hint-box">{aiHint.suggestion}</div>
+            {Array.isArray(aiHint.nextSteps) && aiHint.nextSteps.length > 0 && (
+              <>
+                <h2>Suggested Next Steps</h2>
+                <ul>
+                  {aiHint.nextSteps.map((step, index) => (
+                    <li key={`${step}-${index}`}>{step}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        )}
 
         {result && (
           <div className={`submission-result ${result.success ? 'success' : 'error'}`}>

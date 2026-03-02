@@ -255,6 +255,10 @@
   margin-bottom: 10px;
 }
 
+.challenge-ai-panel {
+  margin-top: 18px;
+}
+
 .challenge-editor {
   background: white;
   border: 1px solid #dbe3f5;
