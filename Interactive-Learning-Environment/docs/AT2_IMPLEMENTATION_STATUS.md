@@ -1,6 +1,6 @@
 # AT2 Implementation Status
 
-Updated: 2026-03-01
+Updated: 2026-03-02
 
 ## Implemented in Code
 
@@ -25,6 +25,11 @@ Updated: 2026-03-01
 - Student challenge recommendations now adapt to performance and assignment pressure.
 - Dynamic target difficulty (`easy/medium/hard`) is computed from recent outcomes.
 - Learning path guidance is surfaced in student dashboard adaptive profile.
+
+### AI Tutor Enhancement (Beyond Core FR Set)
+- Real-time AI tutor chat added on challenge page for student support during coding.
+- Context-aware tutor requests include challenge metadata, draft code, language, and recent result signals.
+- Safe fallback response is returned when model key is not configured, so platform remains stable.
 
 ### Objective 5 (Accessibility)
 - Accessibility panel (contrast, text size, keyboard shortcuts).
@@ -59,3 +64,6 @@ These are not purely code changes and still require your assessment evidence pac
 - Submission marking + progression: `backend/src/routes/submissionRoutes.js`
 - Progress updates: `backend/src/routes/progressRoutes.js`
 - Privacy/GDPR: `backend/src/routes/privacyRoutes.js`
+- Real-time AI tutor route: `backend/src/routes/aiRoutes.js`
+- Real-time AI tutor service: `backend/src/services/realtimeTutorService.js`
+- Challenge AI tutor UI: `frontend/src/pages/ChallengePage.js`
