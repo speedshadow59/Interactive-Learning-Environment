@@ -5,6 +5,13 @@ import { useAuthStore } from '../stores/authStore';
 import BlockEditor from '../components/BlockEditor';
 import '../styles/Challenge.css';
 
+const tutorPromptSuggestions = [
+  'Can you explain what this challenge is asking me to do?',
+  'What should I test first before I submit?',
+  'Why might this output not match expected output?',
+  'Give me a hint without giving the final answer.',
+];
+
 /*
   Challenge page flow:
   1) fetch challenge metadata
@@ -31,6 +38,7 @@ const ChallengePage = () => {
   const [aiTutorInput, setAiTutorInput] = useState('');
   const [aiTutorLoading, setAiTutorLoading] = useState(false);
   const [aiTutorError, setAiTutorError] = useState('');
+  const [aiTutorUsage, setAiTutorUsage] = useState(null);
   const [error, setError] = useState('');
   const [showHints, setShowHints] = useState(false);
   const [useBlockMode, setUseBlockMode] = useState(true);
@@ -234,11 +242,53 @@ const ChallengePage = () => {
       };
 
       setAiTutorMessages((prev) => [...prev, assistantMessage]);
+      if (response.data?.usage) {
+        setAiTutorUsage(response.data.usage);
+      }
     } catch (err) {
+      if (err.response?.data?.usage) {
+        setAiTutorUsage(err.response.data.usage);
+      }
       setAiTutorError(err.response?.data?.message || 'Failed to get AI tutor response.');
     } finally {
       setAiTutorLoading(false);
     }
+  };
+
+  const handleTutorInputKeyDown = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      if (!aiTutorLoading) {
+        handleAskAiTutor();
+      }
+    }
+  };
+
+  const handleTutorQuickPrompt = (promptText) => {
+    setAiTutorInput(promptText);
+  };
+
+  const handleClearTutorChat = () => {
+    setAiTutorMessages([]);
+    setAiTutorError('');
+  };
+
+  const handleExportTutorChat = () => {
+    if (!aiTutorMessages.length) return;
+
+    const content = aiTutorMessages
+      .map((msg) => `${msg.role === 'user' ? 'Student' : 'Tutor'}: ${msg.content}`)
+      .join('\n\n');
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tutor-chat-${id}-${new Date().toISOString().slice(0, 10)}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   if (loading) return <div className="loading">Loading challenge...</div>;
@@ -425,6 +475,26 @@ const ChallengePage = () => {
           <h2>Real-time AI Tutor</h2>
           <p>Ask questions about your current code and challenge requirements.</p>
 
+          {aiTutorUsage && (
+            <div className="section-subtitle ai-tutor-usage">
+              AI tutor requests left today: {aiTutorUsage.remainingToday}/{aiTutorUsage.dailyLimit}
+            </div>
+          )}
+
+          <div className="ai-tutor-prompt-row">
+            {tutorPromptSuggestions.map((prompt) => (
+              <button
+                key={prompt}
+                className="btn btn-secondary ai-prompt-chip"
+                type="button"
+                onClick={() => handleTutorQuickPrompt(prompt)}
+                disabled={aiTutorLoading}
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+
           <div className="ai-tutor-chat-log">
             {aiTutorMessages.length > 0 ? (
               aiTutorMessages.map((msg, index) => (
@@ -445,6 +515,7 @@ const ChallengePage = () => {
               type="text"
               value={aiTutorInput}
               onChange={(event) => setAiTutorInput(event.target.value)}
+              onKeyDown={handleTutorInputKeyDown}
               placeholder="e.g. Why does my loop miss the last item?"
             />
             <button
@@ -454,6 +525,25 @@ const ChallengePage = () => {
               disabled={aiTutorLoading}
             >
               {aiTutorLoading ? 'Thinking...' : 'Ask Tutor'}
+            </button>
+          </div>
+
+          <div className="ai-tutor-actions-row">
+            <button
+              className="btn btn-secondary"
+              type="button"
+              onClick={handleClearTutorChat}
+              disabled={aiTutorLoading || aiTutorMessages.length === 0}
+            >
+              Clear Chat
+            </button>
+            <button
+              className="btn btn-secondary"
+              type="button"
+              onClick={handleExportTutorChat}
+              disabled={aiTutorMessages.length === 0}
+            >
+              Export Chat
             </button>
           </div>
 

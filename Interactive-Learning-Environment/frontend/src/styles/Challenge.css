@@ -268,6 +268,23 @@
   margin-bottom: 10px;
 }
 
+.ai-tutor-usage {
+  margin-bottom: 10px;
+}
+
+.ai-tutor-prompt-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ai-prompt-chip {
+  font-size: 12px;
+  padding: 8px 10px;
+  border-radius: 999px;
+}
+
 .ai-tutor-message {
   margin-bottom: 10px;
   line-height: 1.45;
@@ -288,6 +305,12 @@
   border: 1px solid #dbe3f5;
   border-radius: 8px;
   padding: 10px 12px;
+}
+
+.ai-tutor-actions-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
 }
 
 .challenge-editor {
