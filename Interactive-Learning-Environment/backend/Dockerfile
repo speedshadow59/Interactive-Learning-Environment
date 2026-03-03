@@ -6,6 +6,8 @@ COPY package*.json ./
 
 RUN npm install
 
+RUN apk add --no-cache python3
+
 COPY . .
 
 EXPOSE 5000

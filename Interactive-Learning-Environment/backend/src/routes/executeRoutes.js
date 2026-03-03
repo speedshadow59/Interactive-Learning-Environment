@@ -6,12 +6,13 @@ const router = express.Router();
 
 router.post('/', (req, res) => {
   const { code = '', language = 'javascript' } = req.body || {};
+  const normalizedLanguage = `${language || 'javascript'}`.toLowerCase();
 
   if (!code || typeof code !== 'string') {
     return res.status(400).json({ success: false, error: 'Code is required' });
   }
 
-  if (language === 'javascript') {
+  if (['javascript', 'js', 'java'].includes(normalizedLanguage)) {
     const logs = [];
     const sandbox = {
       console: {
@@ -27,16 +28,24 @@ router.post('/', (req, res) => {
     }
   }
 
-  if (language === 'python') {
-    const py = spawnSync('python', ['-c', code], {
+  if (['python', 'py'].includes(normalizedLanguage)) {
+    const pythonExecutable = process.platform === 'win32' ? 'python' : 'python3';
+    let py = spawnSync(pythonExecutable, ['-c', code], {
       encoding: 'utf-8',
       timeout: 2000,
     });
 
+    if (py.error && pythonExecutable !== 'python') {
+      py = spawnSync('python', ['-c', code], {
+        encoding: 'utf-8',
+        timeout: 2000,
+      });
+    }
+
     if (py.error) {
       return res.status(400).json({
         success: false,
-        error: 'Python runtime is not available in backend container yet.',
+        error: 'Python runtime is not available in backend environment.',
       });
     }
 
