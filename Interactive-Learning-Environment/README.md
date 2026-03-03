@@ -247,7 +247,6 @@ Please ensure code follows the project standards:
 - Offline mode with local caching
 - Google Classroom / MS Teams integration
 - Tournaments and seasonal competitions
-- AI-powered hint generation
 - Mobile app (React Native)
 - Video lessons and tutorials
 - Advanced analytics dashboard
@@ -279,12 +278,16 @@ docker-compose exec backend node src/seed.js
 ### Test Accounts (After Seeding)
 
 **Students:**
-- Email: `alice@student.edu` | Password: `password123`
-- Email: `bob@student.edu` | Password: `password123`
+- Username: `alex_coder` | Password: `password123`
+- Username: `emma_dev` | Password: `password123`
+- Username: `jordan_learns` | Password: `password123`
 
 **Teachers:**
-- Email: `john@teacher.edu` | Password: `password123`
-- Email: `jane@teacher.edu` | Password: `password123`
+- Username: `mr_smith` | Password: `password123`
+- Username: `ms_johnson` | Password: `password123`
+
+**Admin (if created):**
+- Username: `super_admin` | Password: `password123`
 
 ### Accessibility Features
 

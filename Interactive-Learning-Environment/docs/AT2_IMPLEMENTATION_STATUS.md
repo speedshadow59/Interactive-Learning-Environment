@@ -61,14 +61,6 @@ Updated: 2026-03-02
 - Add accessibility audit artifacts (tool output + manual checklist evidence).
 - Add performance/security evidence snapshots (API timing, RBAC/auth checks).
 
-## Remaining AT2 Evidence (Non-Code Artifacts)
-
-These are not purely code changes and still require your assessment evidence pack:
-- User testing round outputs and findings.
-- Accessibility audit reports (axe/WAVE + manual checks).
-- Performance/load testing report.
-- Security testing/audit report.
-
 ## Quick Evidence Pointers
 
 - Student dashboard: `frontend/src/pages/StudentDashboard.js`
