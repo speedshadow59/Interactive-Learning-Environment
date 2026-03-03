@@ -38,6 +38,11 @@ const BlockEditor = ({ initialBlocks, onChange, language = 'javascript' }) => {
 
   const currentTemplates = blockTemplates[language] || blockTemplates.javascript;
 
+  const currentTemplateByType = currentTemplates.reduce((acc, template) => {
+    acc[template.id] = template;
+    return acc;
+  }, {});
+
   // Creates a unique, editable block instance from a template definition.
   const createBlockFromTemplate = (template) => ({
     id: `block-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -53,6 +58,38 @@ const BlockEditor = ({ initialBlocks, onChange, language = 'javascript' }) => {
   useEffect(() => {
     setBlocks(initialBlocks || []);
   }, [initialBlocks]);
+
+  useEffect(() => {
+    setBlocks((prevBlocks) => {
+      if (!Array.isArray(prevBlocks) || prevBlocks.length === 0) return prevBlocks;
+
+      let hasChanged = false;
+      const remappedBlocks = prevBlocks.map((block) => {
+        const template = currentTemplateByType[block.type];
+        if (!template) return block;
+
+        const nextLabel = template.label;
+        const nextCode = template.code;
+        if (block.label === nextLabel && block.code === nextCode) {
+          return block;
+        }
+
+        hasChanged = true;
+        return {
+          ...block,
+          label: nextLabel,
+          code: nextCode,
+        };
+      });
+
+      if (hasChanged) {
+        onChange(remappedBlocks);
+        return remappedBlocks;
+      }
+
+      return prevBlocks;
+    });
+  }, [language]);
 
   const addBlock = (template) => {
     const newBlock = createBlockFromTemplate(template);

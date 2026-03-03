@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../services/apiClient';
 import { useAuthStore } from '../stores/authStore';
@@ -14,6 +14,33 @@ const tutorPromptSuggestions = [
 
 const getApiErrorMessage = (err, fallbackMessage) => {
   return err.response?.data?.message || fallbackMessage;
+};
+
+const getStarterCodeByLanguage = (selectedLanguage) => {
+  return selectedLanguage === 'python'
+    ? '# Write your code here\n'
+    : '// Write your code here\n';
+};
+
+const blockCodeTemplates = {
+  javascript: {
+    log: 'console.log(%text%);',
+    var: 'let %var% = %value%;',
+    if: 'if (%condition%) {\n  %body%\n}',
+    for: 'for (let i = 0; i < %count%; i++) {\n  %body%\n}',
+    function: 'function %name%(%params%) {\n  %body%\n}',
+    return: 'return %value%;',
+    add: '%a% + %b%',
+  },
+  python: {
+    log: 'print(%text%)',
+    var: '%var% = %value%',
+    if: 'if %condition%:\n    %body%',
+    for: 'for i in range(%count%):\n    %body%',
+    function: 'def %name%(%params%):\n    %body%',
+    return: 'return %value%',
+    add: '%a% + %b%',
+  },
 };
 
 /*
@@ -46,6 +73,7 @@ const ChallengePage = () => {
   const [error, setError] = useState('');
   const [showHints, setShowHints] = useState(false);
   const [useBlockMode, setUseBlockMode] = useState(true);
+  const lastAutoBlockCodeRef = useRef('');
 
   const canAskTutor = aiTutorInput.trim().length > 0 && !aiTutorLoading;
 
@@ -53,9 +81,11 @@ const ChallengePage = () => {
   const buildCodeFromBlocks = () => {
     if (blocks.length === 0) return code;
 
+    const languageTemplates = blockCodeTemplates[language] || blockCodeTemplates.javascript;
+
     return blocks
       .map((block) => {
-        let blockCode = block.code;
+        let blockCode = languageTemplates[block.type] || block.code;
         Object.entries(block.params).forEach(([param, value]) => {
           let resolved = value || `<${param}>`;
           if (block.type === 'log' && param === 'text') {
@@ -99,7 +129,7 @@ const ChallengePage = () => {
       try {
         const response = await apiClient.get(`/challenges/${id}`);
         setChallenge(response.data);
-        setCode(response.data.initialCode || '// Write your code here\n');
+        setCode(response.data.initialCode || getStarterCodeByLanguage(language));
         
         // Initialize blocks if this is a block-based challenge
         if (response.data.isBlockBased) {
@@ -116,6 +146,42 @@ const ChallengePage = () => {
 
     fetchChallenge();
   }, [id]);
+
+  useEffect(() => {
+    setCode((previousCode) => {
+      const jsStarter = getStarterCodeByLanguage('javascript');
+      const pyStarter = getStarterCodeByLanguage('python');
+      const normalized = (previousCode || '').trim();
+
+      const isStarterLike =
+        normalized.length === 0 ||
+        normalized === jsStarter.trim() ||
+        normalized === pyStarter.trim();
+
+      if (!isStarterLike) {
+        return previousCode;
+      }
+
+      return getStarterCodeByLanguage(language);
+    });
+  }, [language]);
+
+  useEffect(() => {
+    if (!Array.isArray(blocks) || blocks.length === 0) return;
+
+    const generatedBlockCode = buildCodeFromBlocks();
+    const currentCode = code || '';
+    const shouldAutoSync =
+      useBlockMode ||
+      currentCode.trim().length === 0 ||
+      currentCode === lastAutoBlockCodeRef.current;
+
+    if (shouldAutoSync && currentCode !== generatedBlockCode) {
+      setCode(generatedBlockCode);
+    }
+
+    lastAutoBlockCodeRef.current = generatedBlockCode;
+  }, [blocks, language, useBlockMode]);
 
   // Persists student submission and syncs progress when challenge is passed.
   const handleSubmit = async () => {
