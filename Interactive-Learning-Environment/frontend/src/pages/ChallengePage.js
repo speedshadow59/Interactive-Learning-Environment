@@ -183,6 +183,15 @@ const ChallengePage = () => {
     lastAutoBlockCodeRef.current = generatedBlockCode;
   }, [blocks, language, useBlockMode]);
 
+  useEffect(() => {
+    if (!Array.isArray(blocks) || blocks.length === 0) return;
+    const generatedBlockCode = buildCodeFromBlocks();
+    if ((code || '') !== generatedBlockCode) {
+      setCode(generatedBlockCode);
+    }
+    lastAutoBlockCodeRef.current = generatedBlockCode;
+  }, [language]);
+
   // Persists student submission and syncs progress when challenge is passed.
   const handleSubmit = async () => {
     setSubmitting(true);
