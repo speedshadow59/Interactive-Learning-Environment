@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import '../styles/BlockEditor.css';
 
 /*
@@ -38,10 +38,12 @@ const BlockEditor = ({ initialBlocks, onChange, language = 'javascript' }) => {
 
   const currentTemplates = blockTemplates[language] || blockTemplates.javascript;
 
-  const currentTemplateByType = currentTemplates.reduce((acc, template) => {
-    acc[template.id] = template;
-    return acc;
-  }, {});
+  const currentTemplateByType = useMemo(() => {
+    return currentTemplates.reduce((acc, template) => {
+      acc[template.id] = template;
+      return acc;
+    }, {});
+  }, [currentTemplates]);
 
   // Creates a unique, editable block instance from a template definition.
   const createBlockFromTemplate = (template) => ({
@@ -89,7 +91,7 @@ const BlockEditor = ({ initialBlocks, onChange, language = 'javascript' }) => {
 
       return prevBlocks;
     });
-  }, [language]);
+  }, [language, currentTemplateByType, onChange]);
 
   const addBlock = (template) => {
     const newBlock = createBlockFromTemplate(template);

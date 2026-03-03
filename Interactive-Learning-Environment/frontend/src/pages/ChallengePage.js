@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../services/apiClient';
 import { useAuthStore } from '../stores/authStore';
@@ -74,16 +74,17 @@ const ChallengePage = () => {
   const [showHints, setShowHints] = useState(false);
   const [useBlockMode, setUseBlockMode] = useState(true);
   const lastAutoBlockCodeRef = useRef('');
+  const prevLanguageRef = useRef(language);
 
   const canAskTutor = aiTutorInput.trim().length > 0 && !aiTutorLoading;
 
   // Converts visual blocks into executable source code.
-  const buildCodeFromBlocks = () => {
-    if (blocks.length === 0) return code;
+  const buildCodeFromBlocks = useCallback((sourceBlocks = blocks, selectedLanguage = language) => {
+    if (!Array.isArray(sourceBlocks) || sourceBlocks.length === 0) return '';
 
-    const languageTemplates = blockCodeTemplates[language] || blockCodeTemplates.javascript;
+    const languageTemplates = blockCodeTemplates[selectedLanguage] || blockCodeTemplates.javascript;
 
-    return blocks
+    return sourceBlocks
       .map((block) => {
         let blockCode = languageTemplates[block.type] || block.code;
         Object.entries(block.params).forEach(([param, value]) => {
@@ -107,7 +108,7 @@ const ChallengePage = () => {
         return blockCode;
       })
       .join('\n');
-  };
+  }, [blocks, language]);
 
   // Chooses the authoritative code payload depending on current editor mode.
   const buildSubmissionCode = () => {
@@ -129,7 +130,7 @@ const ChallengePage = () => {
       try {
         const response = await apiClient.get(`/challenges/${id}`);
         setChallenge(response.data);
-        setCode(response.data.initialCode || getStarterCodeByLanguage(language));
+        setCode(response.data.initialCode || getStarterCodeByLanguage('javascript'));
         
         // Initialize blocks if this is a block-based challenge
         if (response.data.isBlockBased) {
@@ -167,11 +168,16 @@ const ChallengePage = () => {
   }, [language]);
 
   useEffect(() => {
-    if (!Array.isArray(blocks) || blocks.length === 0) return;
+    if (!Array.isArray(blocks) || blocks.length === 0) {
+      prevLanguageRef.current = language;
+      return;
+    }
 
     const generatedBlockCode = buildCodeFromBlocks();
     const currentCode = code || '';
+    const languageChanged = prevLanguageRef.current !== language;
     const shouldAutoSync =
+      languageChanged ||
       useBlockMode ||
       currentCode.trim().length === 0 ||
       currentCode === lastAutoBlockCodeRef.current;
@@ -181,16 +187,8 @@ const ChallengePage = () => {
     }
 
     lastAutoBlockCodeRef.current = generatedBlockCode;
-  }, [blocks, language, useBlockMode]);
-
-  useEffect(() => {
-    if (!Array.isArray(blocks) || blocks.length === 0) return;
-    const generatedBlockCode = buildCodeFromBlocks();
-    if ((code || '') !== generatedBlockCode) {
-      setCode(generatedBlockCode);
-    }
-    lastAutoBlockCodeRef.current = generatedBlockCode;
-  }, [language]);
+    prevLanguageRef.current = language;
+  }, [blocks, language, useBlockMode, code, buildCodeFromBlocks]);
 
   // Persists student submission and syncs progress when challenge is passed.
   const handleSubmit = async () => {
