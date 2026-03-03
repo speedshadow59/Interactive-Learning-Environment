@@ -36,7 +36,7 @@ const BadgesDisplay = ({ studentId }) => {
         <div className="badges-grid">
           {badges.map((badge, index) => (
             <div key={index} className="badge-card">
-              <div className="badge-icon">🏆</div>
+              <div className="badge-icon">Badge</div>
               <div className="badge-info">
                 <h3>{badge.name}</h3>
                 <p>{badge.description}</p>

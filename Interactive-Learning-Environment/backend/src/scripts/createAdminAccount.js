@@ -27,7 +27,7 @@ async function createAdminAccount() {
       existingUser.isActive = true;
       await existingUser.save();
 
-      console.log('✅ Updated existing user to full-access admin account');
+      console.log('Updated existing user to full-access admin account');
     } else {
       await User.create({
         username,
@@ -44,10 +44,10 @@ async function createAdminAccount() {
         }
       });
 
-      console.log('✅ Created full-access admin account');
+      console.log('Created full-access admin account');
     }
 
-    console.log('\n📝 Admin Login Credentials:');
+    console.log('\nAdmin Login Credentials:');
     console.log(`   Username: ${username}`);
     console.log(`   Email: ${email}`);
     console.log(`   Password: ${password}`);
@@ -55,7 +55,7 @@ async function createAdminAccount() {
     await mongoose.connection.close();
     process.exit(0);
   } catch (error) {
-    console.error('❌ Failed to create/update admin account:', error.message);
+    console.error('Failed to create/update admin account:', error.message);
     process.exit(1);
   }
 }

@@ -13,7 +13,7 @@ const badgeSchema = new mongoose.Schema(
     },
     icon: {
       type: String,
-      default: '🏆'
+      default: 'badge'
     },
     category: {
       type: String,

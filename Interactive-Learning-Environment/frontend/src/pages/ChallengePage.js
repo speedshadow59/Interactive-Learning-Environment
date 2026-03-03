@@ -469,7 +469,7 @@ const ChallengePage = () => {
                 className={`toggle-btn ${useBlockMode ? 'active' : ''}`}
                 onClick={switchToBlockMode}
               >
-                🧩 Block Mode
+                Block Mode
               </button>
               <button
                 className={`toggle-btn ${!useBlockMode ? 'active' : ''}`}

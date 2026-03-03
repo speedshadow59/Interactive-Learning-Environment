@@ -142,7 +142,7 @@ const StudentAnalytics = ({ courseId }) => {
               <div className="badges-mini-list">
                 {selectedStudent.badges.map((badge, index) => (
                   <div key={index} className="badge-mini">
-                    🏆 {badge.name}
+                    Badge: {badge.name}
                   </div>
                 ))}
               </div>

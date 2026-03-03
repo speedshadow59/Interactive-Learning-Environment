@@ -12,16 +12,16 @@ const Progress = require('./models/Progress');
 
 async function seed() {
   try {
-    console.log('🌱 Starting database seeding...');
+    console.log('Starting database seeding...');
     
     const mongoUri = process.env.MONGODB_URI || 'mongodb://mongodb:27017/interactive-learning-env';
-    console.log(`📦 Connecting to MongoDB at ${mongoUri}...`);
+    console.log(`Connecting to MongoDB at ${mongoUri}...`);
     
     await mongoose.connect(mongoUri);
-    console.log('✅ Connected to MongoDB');
+    console.log('Connected to MongoDB');
 
     // Clear existing data
-    console.log('🧹 Clearing existing data...');
+    console.log('Clearing existing data...');
     await User.deleteMany({});
     await Course.deleteMany({});
     await Challenge.deleteMany({});
@@ -29,14 +29,14 @@ async function seed() {
     await Assignment.deleteMany({});
     await Submission.deleteMany({});
     await Progress.deleteMany({});
-    console.log('✅ Old data cleared');
+    console.log('Old data cleared');
 
     const now = Date.now();
     const daysAgo = (value) => new Date(now - value * 24 * 60 * 60 * 1000);
     const daysFromNow = (value) => new Date(now + value * 24 * 60 * 60 * 1000);
 
     // Create teachers
-    console.log('👨‍🏫 Creating teachers...');
+    console.log('Creating teachers...');
     const teacher1 = await User.create({
       username: 'mr_smith',
       email: 'smith@school.edu',
@@ -69,10 +69,10 @@ async function seed() {
       school: 'Tech Academy',
       bio: 'Full platform access for demos and moderation'
     });
-    console.log('✅ Teachers created');
+    console.log('Teachers created');
 
     // Create students
-    console.log('👨‍🎓 Creating students...');
+    console.log('Creating students...');
     const student1 = await User.create({
       username: 'alex_coder',
       email: 'alex@student.edu',
@@ -108,10 +108,10 @@ async function seed() {
       school: 'Tech Academy',
       bio: 'Beginner programmer'
     });
-    console.log('✅ Students created');
+    console.log('Students created');
 
     // Create courses
-    console.log('📚 Creating courses...');
+    console.log('Creating courses...');
     const course1 = await Course.create({
       title: 'JavaScript Fundamentals',
       description: 'Learn the basics of JavaScript programming including variables, functions, and control flow.',
@@ -190,10 +190,10 @@ async function seed() {
     await student2.save();
     await student3.save();
 
-    console.log('✅ Courses created');
+    console.log('Courses created');
 
     // Create challenges for JavaScript Fundamentals
-    console.log('🎯 Creating challenges...');
+    console.log('Creating challenges...');
     const challenge1 = await Challenge.create({
       title: 'Hello World',
       description: 'Write a program that prints "Hello, World!" to the console.',
@@ -497,14 +497,14 @@ async function seed() {
     await course4.save();
     await course5.save();
     await course6.save();
-    console.log('✅ Challenges created');
+    console.log('Challenges created');
 
     // Create badges
-    console.log('🏆 Creating badges...');
+    console.log('Creating badges...');
     const badge1 = await Badge.create({
       name: 'First Steps',
       description: 'Completed your first challenge',
-      icon: '👶',
+      icon: 'first-steps',
       category: 'completion',
       requiredChallenges: 1
     });
@@ -512,7 +512,7 @@ async function seed() {
     const badge2 = await Badge.create({
       name: 'Challenge Master',
       description: 'Completed 10 challenges',
-      icon: '⭐',
+      icon: 'challenge-master',
       category: 'mastery',
       requiredChallenges: 10
     });
@@ -520,13 +520,13 @@ async function seed() {
     const badge3 = await Badge.create({
       name: 'Perfect Score',
       description: 'Got 100% on a challenge',
-      icon: '🎯',
+      icon: 'perfect-score',
       category: 'special',
       requiredPoints: 100
     });
-    console.log('✅ Badges created');
+    console.log('Badges created');
 
-    console.log('📌 Creating assignments...');
+    console.log('Creating assignments...');
     const assignment1 = await Assignment.create({
       title: 'Week 1 JavaScript Basics',
       description: 'Complete the first two JavaScript fundamentals challenges.',
@@ -548,9 +548,9 @@ async function seed() {
       dueDate: daysFromNow(5),
       isPublished: true
     });
-    console.log('✅ Assignments created');
+    console.log('Assignments created');
 
-    console.log('🧪 Creating submissions...');
+    console.log('Creating submissions...');
     await Submission.create([
       {
         student: student1._id,
@@ -610,9 +610,9 @@ async function seed() {
         completedAt: daysAgo(1)
       }
     ]);
-    console.log('✅ Submissions created');
+    console.log('Submissions created');
 
-    console.log('📈 Creating progress snapshots...');
+    console.log('Creating progress snapshots...');
     await Progress.create([
       {
         student: student1._id,
@@ -696,10 +696,10 @@ async function seed() {
         estimatedTimeToCompletion: 8
       }
     ]);
-    console.log('✅ Progress snapshots created');
+    console.log('Progress snapshots created');
 
-    console.log('\n✨ Database seeded successfully!');
-    console.log('\n📝 Sample Credentials:');
+    console.log('\nDatabase seeded successfully!');
+    console.log('\nSample Credentials:');
     console.log('   Teachers:');
     console.log('   - Username: mr_smith / Password: password123');
     console.log('   - Username: ms_johnson / Password: password123');
@@ -711,10 +711,10 @@ async function seed() {
     console.log('   - Username: jordan_learns / Password: password123');
 
     await mongoose.connection.close();
-    console.log('\n✅ Database connection closed');
+    console.log('\nDatabase connection closed');
     process.exit(0);
   } catch (error) {
-    console.error('❌ Seeding failed:', error);
+    console.error('Seeding failed:', error);
     process.exit(1);
   }
 }
