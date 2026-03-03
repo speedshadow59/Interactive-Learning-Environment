@@ -6,6 +6,9 @@ const User = require('./models/User');
 const Course = require('./models/Course');
 const Challenge = require('./models/Challenge');
 const Badge = require('./models/Badge');
+const Assignment = require('./models/Assignment');
+const Submission = require('./models/Submission');
+const Progress = require('./models/Progress');
 
 async function seed() {
   try {
@@ -23,7 +26,14 @@ async function seed() {
     await Course.deleteMany({});
     await Challenge.deleteMany({});
     await Badge.deleteMany({});
+    await Assignment.deleteMany({});
+    await Submission.deleteMany({});
+    await Progress.deleteMany({});
     console.log('✅ Old data cleared');
+
+    const now = Date.now();
+    const daysAgo = (value) => new Date(now - value * 24 * 60 * 60 * 1000);
+    const daysFromNow = (value) => new Date(now + value * 24 * 60 * 60 * 1000);
 
     // Create teachers
     console.log('👨‍🏫 Creating teachers...');
@@ -47,6 +57,17 @@ async function seed() {
       role: 'teacher',
       school: 'Tech Academy',
       bio: 'Specializes in Web Development'
+    });
+
+    const admin = await User.create({
+      username: 'admin_master',
+      email: 'admin@school.edu',
+      password: 'password123',
+      firstName: 'System',
+      lastName: 'Admin',
+      role: 'admin',
+      school: 'Tech Academy',
+      bio: 'Full platform access for demos and moderation'
     });
     console.log('✅ Teachers created');
 
@@ -505,11 +526,185 @@ async function seed() {
     });
     console.log('✅ Badges created');
 
+    console.log('📌 Creating assignments...');
+    const assignment1 = await Assignment.create({
+      title: 'Week 1 JavaScript Basics',
+      description: 'Complete the first two JavaScript fundamentals challenges.',
+      course: course1._id,
+      challenge: challenge2._id,
+      teacher: teacher1._id,
+      assignedTo: [student1._id, student2._id, student3._id],
+      dueDate: daysFromNow(7),
+      isPublished: true
+    });
+
+    const assignment2 = await Assignment.create({
+      title: 'Python Logic Practice',
+      description: 'Finish palindrome challenge and explain your approach in comments.',
+      course: course4._id,
+      challenge: challenge10._id,
+      teacher: teacher2._id,
+      assignedTo: [student2._id, student3._id],
+      dueDate: daysFromNow(5),
+      isPublished: true
+    });
+    console.log('✅ Assignments created');
+
+    console.log('🧪 Creating submissions...');
+    await Submission.create([
+      {
+        student: student1._id,
+        challenge: challenge1._id,
+        assignment: assignment1._id,
+        course: course1._id,
+        code: 'console.log("Hello, World!");',
+        language: 'javascript',
+        result: 'passed',
+        testsPassed: 1,
+        totalTests: 1,
+        feedback: 'Great start. Output matches expected result.',
+        executionTime: 8,
+        pointsEarned: 50,
+        timeSpent: 120,
+        attempts: 1,
+        isFirstAttempt: true,
+        submittedAt: daysAgo(6),
+        completedAt: daysAgo(6)
+      },
+      {
+        student: student2._id,
+        challenge: challenge2._id,
+        assignment: assignment1._id,
+        course: course1._id,
+        code: 'function add(a, b) { return a + b; }\nconsole.log(add(5, 3));',
+        language: 'javascript',
+        result: 'passed',
+        testsPassed: 2,
+        totalTests: 2,
+        feedback: 'Good use of function and return statement.',
+        executionTime: 12,
+        pointsEarned: 75,
+        timeSpent: 260,
+        attempts: 2,
+        isFirstAttempt: false,
+        submittedAt: daysAgo(3),
+        completedAt: daysAgo(3)
+      },
+      {
+        student: student3._id,
+        challenge: challenge10._id,
+        assignment: assignment2._id,
+        course: course4._id,
+        code: 'def is_palindrome(text):\n    cleaned = text.lower()\n    return cleaned == cleaned[::-1]\n\nprint(is_palindrome("level"))',
+        language: 'python',
+        result: 'failed',
+        testsPassed: 1,
+        totalTests: 2,
+        feedback: 'Logic is close. Check expected output formatting for boolean values.',
+        executionTime: 18,
+        pointsEarned: 35,
+        timeSpent: 340,
+        attempts: 3,
+        isFirstAttempt: false,
+        submittedAt: daysAgo(1),
+        completedAt: daysAgo(1)
+      }
+    ]);
+    console.log('✅ Submissions created');
+
+    console.log('📈 Creating progress snapshots...');
+    await Progress.create([
+      {
+        student: student1._id,
+        course: course1._id,
+        completedChallenges: [
+          {
+            challenge: challenge1._id,
+            completedAt: daysAgo(6),
+            pointsEarned: 50
+          }
+        ],
+        totalPoints: 50,
+        currentLevel: 2,
+        experiencePoints: 120,
+        badges: [
+          {
+            name: badge1.name,
+            description: badge1.description,
+            earnedAt: daysAgo(6)
+          }
+        ],
+        achievements: ['Completed first challenge'],
+        averageScore: 100,
+        learningPath: 'mixed',
+        adaptiveRecommendations: [
+          {
+            challengeId: challenge2._id,
+            reason: 'Ready for function-based challenge progression',
+            suggestedAt: daysAgo(2)
+          }
+        ],
+        lastActivityAt: daysAgo(1),
+        estimatedTimeToCompletion: 4
+      },
+      {
+        student: student2._id,
+        course: course1._id,
+        completedChallenges: [
+          {
+            challenge: challenge2._id,
+            completedAt: daysAgo(3),
+            pointsEarned: 75
+          }
+        ],
+        totalPoints: 75,
+        currentLevel: 2,
+        experiencePoints: 180,
+        badges: [],
+        achievements: ['Improved after retries'],
+        averageScore: 90,
+        learningPath: 'text-based',
+        adaptiveRecommendations: [
+          {
+            challengeId: challenge3._id,
+            reason: 'Practice loops and conditionals to strengthen fundamentals',
+            suggestedAt: daysAgo(1)
+          }
+        ],
+        lastActivityAt: daysAgo(1),
+        estimatedTimeToCompletion: 6
+      },
+      {
+        student: student3._id,
+        course: course4._id,
+        completedChallenges: [],
+        totalPoints: 35,
+        currentLevel: 1,
+        experiencePoints: 90,
+        badges: [],
+        achievements: ['Submitted first Python solution'],
+        averageScore: 55,
+        learningPath: 'visual',
+        adaptiveRecommendations: [
+          {
+            challengeId: challenge9._id,
+            reason: 'Reinforce loop and modulo foundations before advanced string tasks',
+            suggestedAt: daysAgo(1)
+          }
+        ],
+        lastActivityAt: daysAgo(1),
+        estimatedTimeToCompletion: 8
+      }
+    ]);
+    console.log('✅ Progress snapshots created');
+
     console.log('\n✨ Database seeded successfully!');
     console.log('\n📝 Sample Credentials:');
     console.log('   Teachers:');
     console.log('   - Username: mr_smith / Password: password123');
     console.log('   - Username: ms_johnson / Password: password123');
+    console.log('   Admin:');
+    console.log('   - Username: admin_master / Password: password123');
     console.log('   Students:');
     console.log('   - Username: alex_coder / Password: password123');
     console.log('   - Username: emma_dev / Password: password123');
